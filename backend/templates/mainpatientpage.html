@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/patient_main.css') }}">
+</head>
+<body>
+<header class="dashboard-header">
+    <h1>Choose Your Specialist</h1>
+    <form method="GET" action="{{ url_for('patient_dashboard') }}">
+        <input type="text" name="search" placeholder="Search for a specialist..." value="{{ request.args.get('search', '') }}">
+        <button type="submit">Search</button>
+    </form>
+</header>
+
+<section class="specialist-container">
+    {% for s in specialists %}
+    <div class="specialist-card">
+        <div class="icon">
+            {% if s.specialization == "Neurologist" %} 🧠
+            {% elif s.specialization == "Cardiologist" %} ❤️
+            {% elif s.specialization == "Orthopedist" %} 🦴
+            {% elif s.specialization == "General Physician" %} 🩺
+            {% elif s.specialization == "Pulmonologist" %} 🌬️
+            {% elif s.specialization == "Dentist" %} 🦷
+            {% elif s.specialization == "Dermatologist" %} 💆‍♀️
+            {% else %} 🩺
+            {% endif %}
+        </div>
+        <h2>{{ s.specialization }}</h2>
+        <p>Doctors Available: <span class="count">{{ s.count }}</span></p>
+        <p class="fees">₹{{ "%.0f"|format(s.min_fee) }}</p>
+        <p>Days: {{ s.days }}</p>
+        <p>Time: {{ s.earliest_start }}pm - {{ s.latest_end }}pm</p>
+        <a href="{{ url_for('show_specialist', specialization=s.specialization|lower|replace(' ', '_')) }}">
+            <button type="button">View Doctors</button>
+        </a>
+
+    </div>
+    {% endfor %}
+</section>
+
+</body>
+</html>

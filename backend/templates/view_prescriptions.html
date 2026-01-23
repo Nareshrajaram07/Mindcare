@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Prescriptions</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .prescription-container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.3s;
+        }
+
+        .back-btn:hover {
+            background: #f0f0f0;
+        }
+
+        .back-btn svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .header-title h1 {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+
+        .header-title p {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .patient-info {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+        }
+
+        .info-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .info-label {
+            font-size: 12px;
+            color: #999;
+            text-transform: uppercase;
+            margin-bottom: 5px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .prescriptions-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .prescription-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .prescription-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .prescription-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .prescription-date {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .prescription-date strong {
+            display: block;
+            font-size: 18px;
+            margin-top: 5px;
+        }
+
+        .doctor-badge {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+
+        .prescription-body {
+            padding: 25px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section:last-child {
+            margin-bottom: 0;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title svg {
+            width: 20px;
+            height: 20px;
+            color: #667eea;
+        }
+
+        .diagnosis-text {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .medicines-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .medicines-table thead {
+            background: #f8f9fa;
+        }
+
+        .medicines-table th {
+            padding: 12px;
+            text-align: left;
+            font-size: 13px;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .medicines-table td {
+            padding: 12px;
+            border-bottom: 1px solid #e0e0e0;
+            color: #555;
+            font-size: 14px;
+        }
+
+        .medicines-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .notes-text {
+            background: #fffbf0;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #ff9800;
+            color: #666;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .empty-state h2 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: #666;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+            color: #999;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: flex-end;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .btn-secondary:hover {
+            background: #f8f9fa;
+        }
+
+        .print-btn {
+            background: white;
+            color: #667eea;
+            border: 2px solid #667eea;
+        }
+
+        .print-btn:hover {
+            background: #f8f9fa;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .header,
+            .action-buttons {
+                display: none;
+            }
+
+            .prescription-card {
+                page-break-inside: avoid;
+                box-shadow: none;
+                border: 1px solid #ddd;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .prescription-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 15px;
+            }
+
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .medicines-table {
+                font-size: 12px;
+            }
+
+            .medicines-table th,
+            .medicines-table td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="prescription-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.history.back()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
+                    </svg>
+                </button>
+                <div class="header-title">
+                    <h1>My Prescriptions</h1>
+                    <p>From Dr. {{ doctor.name }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Patient Info -->
+        <div class="patient-info">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="info-label">Patient Name</span>
+                    <span class="info-value">{{ patient.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Age</span>
+                    <span class="info-value">{{ patient.age }} years</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Doctor</span>
+                    <span class="info-value">Dr. {{ doctor.name }}</span>
+                </div>
+                <div class="info-item">
+                    <span class="info-label">Specialization</span>
+                    <span class="info-value">{{ doctor.specialization }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prescriptions -->
+        {% if prescriptions %}
+            <div class="prescriptions-list">
+                {% for prescription in prescriptions %}
+                    <div class="prescription-card">
+                        <div class="prescription-header">
+                            <div class="prescription-date">
+                                <span>Date</span>
+                                <strong>{{ prescription.created_date[:10] if prescription.created_date else 'N/A' }}</strong>
+                            </div>
+                            <div class="doctor-badge">
+                                Dr. {{ prescription.doctor_name }} • {{ prescription.specialization }}
+                            </div>
+                        </div>
+
+                        <div class="prescription-body">
+                            <!-- Diagnosis -->
+                            <div class="section">
+                                <div class="section-title">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12,2A10,10 0 0,1 22,12A10,10 0 0,1 12,22A10,10 0 0,1 2,12A10,10 0 0,1 12,2M12,4A8,8 0 0,0 4,12A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4M12,6A3,3 0 0,1 15,9A3,3 0 0,1 12,12A3,3 0 0,1 9,9A3,3 0 0,1 12,6M12,13C12.59,13 13.12,13.06 13.63,13.19C13.36,14.22 13.22,15.31 13.3,16.43C12.88,16.14 12.47,15.78 12.12,15.35C11.55,15.63 11.09,16.09 10.82,16.65C10.35,15.79 10.13,14.76 10.3,13.63C10.81,13.06 11.37,13 12,13M12,3A9,9 0 0,1 21,12C21,16.55 18.08,20.32 14.15,21.25C14.16,21.17 14.16,21.08 14.16,21C14.16,19.64 13.55,18.41 12.59,17.6C13.72,17.08 14.67,16.23 15.21,15.2C16.2,14.42 16.89,13.28 16.89,12C16.89,9.9 15.56,8.13 13.77,7.56C13.25,7.4 12.7,7.31 12.13,7.31C11.13,7.31 10.2,7.62 9.45,8.13C9.16,8 8.85,7.93 8.53,7.93C7.97,7.93 7.47,8.08 7.05,8.34C7,8.23 7,8.11 7,8C7,5.24 9.24,3 12,3Z"/>
+                                    </svg>
+                                    Diagnosis
+                                </div>
+                                <div class="diagnosis-text">{{ prescription.diagnosis }}</div>
+                            </div>
+
+                            <!-- Medicines -->
+                            {% if prescription.medicines %}
+                                <div class="section">
+                                    <div class="section-title">
+                                        <svg viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M12,2C6.48,2 2,6.48 2,12C2,17.52 6.48,22 12,22C17.52,22 22,17.52 22,12C22,6.48 17.52,2 12,2M12,20C7.59,20 4,16.41 4,12C4,7.59 7.59,4 12,4C16.41,4 20,7.59 20,12C20,16.41 16.41,20 12,20M15.5,11H12.5V8.5C12.5,8.22 12.27,8 12,8C11.73,8 11.5,8.22 11.5,8.5V11H8.5C8.22,11 8,11.23 8,11.5C8,11.77 8.22,12 8.5,12H11.5V15.5C11.5,15.78 11.73,16 12,16C12.27,16 12.5,15.78 12.5,15.5V12H15.5C15.78,12 16,11.77 16,11.5C16,11.23 15.78,11 15.5,11Z"/>
+                                        </svg>
+                                        Prescribed Medicines
+                                    </div>
+                                    <table class="medicines-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Medicine</th>
+                                                <th>Dosage</th>
+                                                <th>Duration</th>
+                                                <th>Instructions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {% for medicine in prescription.medicines %}
+                                                <tr>
+                                                    <td><strong>{{ medicine.medicine_name }}</strong></td>
+                                                    <td>{{ medicine.dosage }}</td>
+                                                    <td>{{ medicine.duration }}</td>
+                                                    <td>{{ medicine.instructions or 'N/A' }}</td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% endif %}
+
+                            <!-- Notes -->
+                            {% if prescription.notes %}
+                                <div class="section">
+                                    <div class="section-title">
+                                        <svg viewBox="0 0 24 24" fill="currentColor">
+                                            <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M7.5,17.5C7.5,18.33 8.17,19 9,19H15C15.83,19 16.5,18.33 16.5,17.5C16.5,16.67 15.83,16 15,16H9C8.17,16 7.5,16.67 7.5,17.5M7.5,13C7.5,13.83 8.17,14.5 9,14.5H15C15.83,14.5 16.5,13.83 16.5,13C16.5,12.17 15.83,11.5 15,11.5H9C8.17,11.5 7.5,12.17 7.5,13Z"/>
+                                        </svg>
+                                        Additional Notes
+                                    </div>
+                                    <div class="notes-text">{{ prescription.notes }}</div>
+                                </div>
+                            {% endif %}
+
+                            <div class="action-buttons">
+                                <button class="btn print-btn" onclick="printPrescription({{ loop.index }})">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                                        <path d="M19,8H5V19H19M19,3H5C3.89,3 3,3.9 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5C21,3.9 20.1,3 19,3M7,9H17V13H7V9Z"/>
+                                    </svg>
+                                    Print
+                                </button>
+                                <button class="btn btn-primary" onclick="downloadPrescription({{ loop.index }})">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" style="width: 18px; height: 18px;">
+                                        <path d="M19,9H15V3H9V9H5L12,16L19,9M5,18V20H19V18H5Z"/>
+                                    </svg>
+                                    Download
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="prescription-card">
+                <div class="empty-state">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
+                    </svg>
+                    <h2>No Prescriptions Yet</h2>
+                    <p>You don't have any prescriptions from this doctor yet.</p>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    <script>
+        function printPrescription(index) {
+            const printContent = document.querySelectorAll('.prescription-card')[index - 1].innerHTML;
+            const originalContent = document.body.innerHTML;
+            document.body.innerHTML = '<div class="prescription-card">' + printContent + '</div>';
+            window.print();
+            document.body.innerHTML = originalContent;
+            location.reload();
+        }
+
+        function downloadPrescription(index) {
+            alert('Download feature coming soon! You can use the Print option and save as PDF.');
+        }
+    </script>
+</body>
+</html>

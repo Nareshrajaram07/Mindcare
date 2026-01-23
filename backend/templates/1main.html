@@ -1,0 +1,244 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arogyam.ai</title>
+    <!-- Use Inter font from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    
+    <!-- Link to the external CSS file -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/main.css') }}">
+</head>
+<body>
+    <!-- Animated Background -->
+    <div class="animated-bg">
+        <div class="floating-shape shape-1"></div>
+        <div class="floating-shape shape-2"></div>
+        <div class="floating-shape shape-3"></div>
+        <div class="floating-shape shape-4"></div>
+        <div class="floating-shape shape-5"></div>
+    </div>
+
+    <!-- Header Section -->
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-container">
+                    <i class="fas fa-heartbeat pulse-animation"></i>
+                </div>
+                <h1 class="fade-in-up">Arogyam.ai</h1>
+                <p class="fade-in-up delay-1">Empowering Healthcare with AI & Real-time Doctor Consultations</p>
+                <div class="header-stats fade-in-up delay-2">
+                    <div class="stat-item">
+                        <span class="stat-number">24/7</span>
+                        <span class="stat-label">Available</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">1000+</span>
+                        <span class="stat-label">Doctors</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-number">50+</span>
+                        <span class="stat-label">Languages</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- About Section -->
+        <section class="about-section">
+            <div class="about-content">
+                <h2 class="section-title">About the Project</h2>
+                <div class="about-text">
+                    <p>
+                        Arogyam.ai is a next-generation healthcare platform that bridges the gap between patients and healthcare services. 
+                        Our innovative solution integrates cutting-edge AI technology with the compassion and expertise of medical professionals.
+                    </p>
+                    <p>
+                        This project aims to make healthcare accessible, efficient, and multilingual, ensuring that quality medical advice is always within reach, regardless of location or language barriers.
+                    </p>
+                </div>
+                <div class="about-highlights">
+                    <div class="highlight-item">
+                        <i class="fas fa-shield-alt"></i>
+                        <span>Secure & Private</span>
+                    </div>
+                    <div class="highlight-item">
+                        <i class="fas fa-globe"></i>
+                        <span>Global Access</span>
+                    </div>
+                    <div class="highlight-item">
+                        <i class="fas fa-clock"></i>
+                        <span>Instant Response</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Features Section -->
+        <section class="features-section">
+            <h2 class="section-title">Our Features</h2>
+            <div class="features-grid">
+                <!-- AI Chatbot Card -->
+                <div class="feature-card ai-card">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="icon-container">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <h3>AI-Powered Chatbot</h3>
+                        <p>
+                            Get instant, intelligent health assistance from our AI chatbot. It can help you with initial symptom checks, provide general health information, and guide you to the right consultation mode.
+                        </p>
+                        <div class="feature-tags">
+                            <span class="tag">Instant Response</span>
+                            <span class="tag">24/7 Available</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Doctor Consultation Card -->
+                <div class="feature-card doctor-card">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="icon-container">
+                            <i class="fas fa-user-md"></i>
+                        </div>
+                        <h3>Real-time Consultations</h3>
+                        <p>
+                            Connect with certified doctors for video or chat consultations from the comfort of your home. Get professional medical advice, diagnoses, and prescriptions securely.
+                        </p>
+                        <div class="feature-tags">
+                            <span class="tag">Certified Doctors</span>
+                            <span class="tag">Video/Chat</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Prescription & Delivery Card -->
+                <div class="feature-card prescription-card">
+                    <div class="card-glow"></div>
+                    <div class="card-content">
+                        <div class="icon-container">
+                            <i class="fas fa-prescription-bottle-alt"></i>
+                        </div>
+                        <h3>Prescription & Reminders</h3>
+                        <p>
+                            Manage your e-prescriptions easily and set up timely medicine reminders. We also offer seamless medicine delivery services right to your doorstep.
+                        </p>
+                        <div class="feature-tags">
+                            <span class="tag">E-Prescription</span>
+                            <span class="tag">Home Delivery</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Choose Mode Section -->
+        <section class="consultation-section">
+            <div class="consultation-content">
+                <h2 class="section-title">Choose Your Consultation Mode</h2>
+                <p class="section-subtitle">Select the best option for your healthcare needs</p>
+                
+                <div class="buttons-container">
+                    <a href="/doctor" class="btn btn-doctor">
+                        <div class="btn-bg"></div>
+                        <div class="btn-content">
+                            <i class="fas fa-video"></i>
+                            <div class="btn-text">
+                                <span class="btn-title">Doctor Consultation</span>
+                                <span class="btn-desc">Connect with certified professionals</span>
+                            </div>
+                        </div>
+                    </a>
+                    
+                    <a href="/ai" class="btn btn-ai">
+                        <div class="btn-bg"></div>
+                        <div class="btn-content">
+                            <i class="fas fa-brain"></i>
+                            <div class="btn-text">
+                                <span class="btn-title">AI Consultation</span>
+                                <span class="btn-desc">Get instant AI-powered assistance</span>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+
+                <div class="consultation-features">
+                    <div class="mini-feature">
+                        <i class="fas fa-lock"></i>
+                        <span>End-to-end Encrypted</span>
+                    </div>
+                    <div class="mini-feature">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Mobile Friendly</span>
+                    </div>
+                    <div class="mini-feature">
+                        <i class="fas fa-language"></i>
+                        <span>Multi-language Support</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer Section -->
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <i class="fas fa-heartbeat"></i>
+                    <span>Arogyam.ai</span>
+                </div>
+                <p>&copy; 2025 Arogyam.ai | Final Year Project</p>
+                <div class="footer-links">
+                    <a href="#privacy">Privacy Policy</a>
+                    <a href="#terms">Terms of Service</a>
+                    <a href="#contact">Contact Us</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Add scroll animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('animate-in');
+                }
+            });
+        }, observerOptions);
+
+        // Observe all sections and cards
+        document.querySelectorAll('section, .feature-card').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Add hover effects for feature cards
+        document.querySelectorAll('.feature-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-10px) scale(1.02)';
+            });
+            
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

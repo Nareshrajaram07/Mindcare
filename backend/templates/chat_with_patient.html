@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat with {{ patient.patient_name }} - Dr. {{ doctor.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat_with_patient.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.history.back()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
+                    </svg>
+                </button>
+                <div class="patient-info">
+                    <div class="patient-avatar">
+                        {% if patient.patient_name %}
+                            <span>{{ patient.patient_name[0].upper() }}</span>
+                        {% else %}
+                            <span>?</span>
+                        {% endif %}
+                    </div>
+                    <div class="patient-details">
+                        <h1 class="patient-name">{{ patient.patient_name }}</h1>
+                        <div class="patient-meta">
+                            <span class="age">{{ patient.patient_age }} years old</span>
+                            <span class="separator">•</span>
+                            <span class="last-seen">Last seen: {{ patient.last_message_time }}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" title="Patient History">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M13,3A9,9 0 0,0 4,12H1L4.96,16.03L9,12H6A7,7 0 0,1 13,5A7,7 0 0,1 20,12A7,7 0 0,1 13,19C11.07,19 9.32,18.21 8.06,16.94L6.64,18.36C8.27,20 10.5,21 13,21A9,9 0 0,0 22,12A9,9 0 0,0 13,3Z"/>
+                    </svg>
+                </button>
+                <!-- ✅ Video Call Button -->
+                <button id="videoCallBtn" class="video-btn">📞 Start Video Call</button>
+
+                <!-- ✅ Video Call Container (hidden initially) -->
+                <div id="videoContainer" class="video-container" style="display:none;">
+                <div class="video-header">
+                    <h3>Video Call</h3>
+                    <button id="endCallBtn" class="end-call-btn">End Call</button>
+                </div>
+                <div class="video-wrapper">
+                    <video id="localVideo" autoplay muted playsinline></video>
+                    <video id="remoteVideo" autoplay playsinline></video>
+                </div>
+                </div>
+
+                <!-- ✅ Socket.IO Client -->
+                <script src="https://cdn.socket.io/4.7.4/socket.io.min.js"></script>
+
+                <!-- ✅ WebRTC + Flask-SocketIO Integration -->
+                <script>
+                const socket = io.connect(window.location.origin);
+
+                // These values will be dynamically passed from Flask route
+                const doctor_id = "{{ doctor_id }}";
+                const patient_id = "{{ patient_id }}";
+                const user_type = "{{ user_type or 'doctor' }}";
+                const room = `${doctor_id}_${patient_id}`;
+
+                socket.emit('join_room', { doctor_id, patient_id });
+
+                const videoBtn = document.getElementById('videoCallBtn');
+                const endBtn = document.getElementById('endCallBtn');
+                const videoContainer = document.getElementById('videoContainer');
+                const localVideo = document.getElementById('localVideo');
+                const remoteVideo = document.getElementById('remoteVideo');
+
+                let localStream;
+                let peerConnection;
+                const iceServers = {
+                    iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+                };
+
+                // Start Call
+                videoBtn.onclick = async () => {
+                    socket.emit('start_call', { doctor_id, patient_id, user_type });
+                    await startLocalStream();
+                };
+
+                // Receive Incoming Call
+                socket.on('incoming_call', async (data) => {
+                    const accept = confirm(`Incoming call from ${data.from}. Accept?`);
+                    if (accept) await startLocalStream();
+                });
+
+                // Initialize Local Stream
+                async function startLocalStream() {
+                    videoContainer.style.display = "block";
+                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    localVideo.srcObject = localStream;
+                    createPeerConnection();
+
+                    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+                    const offer = await peerConnection.createOffer();
+                    await peerConnection.setLocalDescription(offer);
+                    socket.emit('webrtc_offer', { room, sdp: offer });
+                }
+
+                // Create RTCPeerConnection
+                function createPeerConnection() {
+                    peerConnection = new RTCPeerConnection(iceServers);
+                    peerConnection.ontrack = (event) => remoteVideo.srcObject = event.streams[0];
+                    peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        socket.emit('webrtc_ice_candidate', { room, candidate: event.candidate });
+                    }
+                    };
+                }
+
+                // Handle WebRTC Offer
+                socket.on('webrtc_offer', async (data) => {
+                    createPeerConnection();
+                    localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                    localVideo.srcObject = localStream;
+                    localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                    const answer = await peerConnection.createAnswer();
+                    await peerConnection.setLocalDescription(answer);
+                    socket.emit('webrtc_answer', { room, sdp: answer });
+                });
+
+                // Handle WebRTC Answer
+                socket.on('webrtc_answer', (data) => {
+                    peerConnection.setRemoteDescription(new RTCSessionDescription(data.sdp));
+                });
+
+                // Handle ICE Candidates
+                socket.on('webrtc_ice_candidate', (data) => {
+                    peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+                });
+
+                // End Call
+                endBtn.onclick = () => {
+                    if (peerConnection) peerConnection.close();
+                    if (localStream) localStream.getTracks().forEach(track => track.stop());
+                    videoContainer.style.display = "none";
+                };
+                </script>
+            </div>
+        </header>
+
+        <!-- Chat Messages Area -->
+        <main class="chat-messages" id="chatMessages">
+            <div class="messages-container" id="messagesContainer">
+                <!-- Date Separator -->
+                <div class="date-separator">
+                    <span>Today</span>
+                </div>
+
+                <!-- Messages will be loaded here dynamically -->
+                {% if messages %}
+                    {% for message in messages %}
+                        <div class="message-wrapper {{ 'sent' if message.sender == 'doctor' else 'received' }}">
+                            <div class="message-bubble">
+                                <div class="message-content">
+                                    {{ message.message }}
+                                </div>
+                                <div class="message-time">
+                                    {{ message.timestamp.strftime('%H:%M') if message.timestamp else 'Now' }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <!-- Welcome Message -->
+                    <div class="message-wrapper received">
+                        <div class="message-bubble">
+                            <div class="message-content">
+                                Hello Dr. {{ doctor.name }}, I hope you're doing well. I wanted to discuss my recent symptoms with you.
+                            </div>
+                            <div class="message-time">10:30</div>
+                        </div>
+                    </div>
+
+                    <div class="message-wrapper sent">
+                        <div class="message-bubble">
+                            <div class="message-content">
+                                Hello {{ patient.patient_name }}! I'm here to help. Please tell me about your symptoms and when they started.
+                            </div>
+                            <div class="message-time">10:32</div>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </main>
+
+        <!-- Message Input Area -->
+        <footer class="message-input-area">
+            <form class="message-form" id="messageForm">
+                <div class="input-container">
+                    <button type="button" class="attachment-btn" title="Attach File">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
+                        </svg>
+                    </button>
+                    
+                    <div class="text-input-wrapper">
+                        <textarea 
+                            id="messageInput" 
+                            placeholder="Type your message..." 
+                            rows="1"
+                            maxlength="1000"></textarea>
+                        <div class="input-actions">
+                            <button type="button" class="emoji-btn" title="Add Emoji">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M12,2C6.47,2 2,6.47 2,12C2,17.53 6.47,22 12,22A10,10 0 0,0 22,12C22,6.47 17.5,2 12,2M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M17,12C17,14.76 14.76,17 12,17C9.24,17 7,14.76 7,12H17Z"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="voice-btn" id="voiceBtn" title="Voice Input">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
+                        </svg>
+                    </button>
+                    
+                    <!-- ✅ UPDATED: Direct URL Link instead of JavaScript handler -->
+                    <a href="/give_prescription/{{ doctor.id }}/{{ patient.patient_id }}" 
+                       class="prescription-btn" 
+                       title="Give Prescription"
+                       style="display: inline-flex; align-items: center; justify-content: center; text-decoration: none;">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M6,2H18A2,2 0 0,1 20,4V20A2,2 0 0,1 18,22H6A2,2 0 0,1 4,20V4A2,2 0 0,1 6,2M12,4A2,2 0 0,0 10,6A2,2 0 0,0 12,8A2,2 0 0,0 14,6A2,2 0 0,0 12,4M7,22H17V20H7V22M7,18H17V17H7V18M9,10V15H11V13H12L13,15H15L13.5,12.5C14.07,12.19 14.5,11.61 14.5,11A1.5,1.5 0 0,0 13,9.5H9M11,11.5H12.5A0.5,0.5 0 0,1 13,12A0.5,0.5 0 0,1 12.5,12.5H11V11.5Z"/>
+                        </svg>
+                    </a>
+                    
+                    <button type="submit" class="send-btn" id="sendBtn" disabled>
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="character-count">
+                    <span id="charCount">0</span>/1000
+                </div>
+            </form>
+        </footer>
+    </div>
+
+    <!-- Typing Indicator (Hidden by default) -->
+    <div class="typing-indicator" id="typingIndicator">
+        <div class="typing-dots">
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+        <span class="typing-text">{{ patient.patient_name }} is typing...</span>
+    </div>
+
+    <!-- Hidden data for JavaScript -->
+    <div id="chat-config" 
+         data-doctor-id="{{ doctor.id or '' }}" 
+         data-patient-id="{{ patient.patient_id or '' }}" 
+         data-doctor-name="{{ doctor.name or '' }}" 
+         data-patient-name="{{ patient.patient_name or '' }}"
+         style="display: none;"></div>
+
+    <script>
+        // Get configuration from data attributes
+        const chatConfig = document.getElementById('chat-config');
+        const DOCTOR_ID = parseInt(chatConfig.dataset.doctorId) || null;
+        const PATIENT_ID = parseInt(chatConfig.dataset.patientId) || null;
+        const DOCTOR_NAME = chatConfig.dataset.doctorName || '';
+        const PATIENT_NAME = chatConfig.dataset.patientName || '';
+
+        // Validate required data
+        if (!DOCTOR_ID || !PATIENT_ID) {
+            console.error('Missing doctor ID or patient ID');
+            alert('Error: Missing required chat information');
+        }
+        
+        // DOM Elements
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const messageForm = document.getElementById('messageForm');
+        const chatMessages = document.getElementById('chatMessages');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const charCount = document.getElementById('charCount');
+        const typingIndicator = document.getElementById('typingIndicator');
+
+        // Speech Recognition Setup
+        let recognition = null;
+        let isRecording = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                console.log('Voice recognition started');
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+                    messageInput.value = (messageInput.value + ' ' + finalTranscript).trim();
+                    messageInput.dispatchEvent(new Event('input'));
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                
+                if (event.error === 'no-speech') {
+                    alert('No speech detected. Please try again.');
+                } else if (event.error === 'not-allowed') {
+                    alert('Microphone access denied. Please enable microphone permissions.');
+                }
+            };
+
+            recognition.onend = function() {
+                isRecording = false;
+                voiceBtn.classList.remove('recording');
+                console.log('Voice recognition ended');
+            };
+        } else {
+            voiceBtn.style.display = 'none';
+            console.log('Speech recognition not supported');
+        }
+
+        // Voice button click handler
+        voiceBtn.addEventListener('click', function() {
+            if (!recognition) {
+                alert('Speech recognition is not supported in your browser.');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                try {
+                    recognition.start();
+                } catch (error) {
+                    console.error('Error starting recognition:', error);
+                }
+            }
+        });
+
+        // Auto-resize textarea
+        messageInput.addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = (this.scrollHeight) + 'px';
+            
+            // Update character count
+            const count = this.value.length;
+            charCount.textContent = count;
+            
+            // Enable/disable send button
+            sendBtn.disabled = this.value.trim().length === 0;
+        });
+
+        // Handle form submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            
+            if (message && !sendBtn.disabled) {
+                sendMessage(message);
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                charCount.textContent = '0';
+                sendBtn.disabled = true;
+            }
+        });
+
+        // Handle Enter key (Shift+Enter for new line)
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                messageForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Send message function
+        async function sendMessage(content) {
+            // Disable send button to prevent spam
+            sendBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/send_message', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        patient_id: PATIENT_ID,
+                        doctor_id: DOCTOR_ID,
+                        sender: 'doctor',
+                        message: content
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    // Add message to UI immediately for better UX
+                    addMessageToUI(content, 'doctor', result.timestamp);
+                    
+                    // Scroll to bottom
+                    scrollToBottom();
+                } else {
+                    console.error('Failed to send message:', result.message);
+                    alert('Failed to send message. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Error sending message. Please check your connection.');
+            } finally {
+                // Re-enable send button
+                setTimeout(() => {
+                    sendBtn.disabled = messageInput.value.trim().length === 0;
+                }, 500);
+            }
+        }
+
+        // Add message to UI
+        function addMessageToUI(content, sender, timestamp) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `message-wrapper ${sender === 'doctor' ? 'sent' : 'received'}`;
+            messageWrapper.innerHTML = `
+                <div class="message-bubble">
+                    <div class="message-content">${escapeHtml(content)}</div>
+                    <div class="message-time">${timestamp || getCurrentTime()}</div>
+                </div>
+            `;
+
+            messagesContainer.appendChild(messageWrapper);
+        }
+
+        // Escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Get current time formatted
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+        }
+
+        // Scroll to bottom
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Load messages from server
+        async function loadMessages() {
+            try {
+                const response = await fetch(`/get_messages/${DOCTOR_ID}/${PATIENT_ID}`);
+                const messages = await response.json();
+                
+                if (Array.isArray(messages)) {
+                    // Clear existing messages (except date separator)
+                    const dateSeparator = messagesContainer.querySelector('.date-separator');
+                    messagesContainer.innerHTML = '';
+                    if (dateSeparator) {
+                        messagesContainer.appendChild(dateSeparator);
+                    }
+                    
+                    // Add all messages
+                    messages.forEach(message => {
+                        addMessageToUI(message.message, message.sender, message.timestamp);
+                    });
+                    
+                    // Scroll to bottom
+                    scrollToBottom();
+                } else {
+                    console.error('Invalid messages format received');
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Poll for new messages every 3 seconds
+        function startMessagePolling() {
+            setInterval(loadMessages, 3000);
+        }
+
+        // Initialize chat
+        function initializeChat() {
+            // Load existing messages
+            loadMessages();
+            
+            // Start polling for new messages
+            startMessagePolling();
+            
+            // Focus on input
+            messageInput.focus();
+            
+            // Scroll to bottom on page load
+            setTimeout(scrollToBottom, 100);
+        }
+
+        // Start when page loads
+        window.addEventListener('load', initializeChat);
+
+        // Handle page visibility change to refresh when user comes back
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                loadMessages();
+            }
+        });
+
+        // Auto-focus on message input when clicking anywhere in chat area
+        chatMessages.addEventListener('click', function() {
+            messageInput.focus();
+        });
+    </script>
+</body>
+</html>

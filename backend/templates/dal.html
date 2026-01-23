@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Login - Arogyam.ai</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dal.css') }}">
+</head>
+<body>
+    <div class="login-container">
+        <h1>Doctor Login</h1>
+        <form action="/doctor_login" method="POST">
+            <div class="form-group">
+                <label for="doctor_name">Doctor Name / Username</label>
+                <input type="text" id="doctor_name" name="doctor_name" placeholder="Enter your name or username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+
+            <button type="submit" class="btn">Login</button>
+
+            <p class="signup-link">Not registered? <a href="/doctor_signup">Sign up here</a></p>
+        </form>
+    </div>
+</body>
+</html>

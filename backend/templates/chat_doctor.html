@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Consultation with Dr. {{ doctor.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat_doctor.css') }}">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Header -->
+        <header class="chat-header">
+            <div class="header-left">
+                <button class="back-btn" onclick="window.history.back()">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
+                    </svg>
+                </button>
+                <div class="doctor-info">
+                    <div class="doctor-avatar">
+                        <span>{{ doctor.name[0] }}</span>
+                    </div>
+                    <div class="doctor-details">
+                        <h1 class="doctor-name">Dr. {{ doctor.name }}</h1>
+                        <div class="doctor-meta">
+                            <span class="specialization">{{ doctor.specialization }}</span>
+                            <span class="separator">•</span>
+                            <span class="fee">₹{{ doctor.fees }} Consultation</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" title="View Prescriptions" onclick="window.location.href='/view_prescriptions/{{ doctor.id }}/{{ patient_id }}'">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20M8,5.5C7.17,5.5 6.5,6.17 6.5,7C6.5,7.83 7.17,8.5 8,8.5C8.83,8.5 9.5,7.83 9.5,7C9.5,6.17 8.83,5.5 8,5.5M8,15.5C7.17,15.5 6.5,16.17 6.5,17C6.5,17.83 7.17,18.5 8,18.5C8.83,18.5 9.5,17.83 9.5,17C9.5,16.17 8.83,15.5 8,15.5M12,11H8V13H12V11M15,15H8V17H15V15Z"/>
+                    </svg>
+                </button>
+                <button class="action-btn" title="Video Call">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M17,10.5V7A1,1 0 0,0 16,6H4A1,1 0 0,0 3,7V17A1,1 0 0,0 4,18H16A1,1 0 0,0 17,17V13.5L21,17.5V6.5L17,10.5Z"/>
+                    </svg>
+                </button>
+                <button class="action-btn" title="Voice Call">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M6.62,10.79C8.06,13.62 10.38,15.94 13.21,17.38L15.41,15.18C15.69,14.9 16.08,14.82 16.43,14.93C17.55,15.3 18.75,15.5 20,15.5A1,1 0 0,1 21,16.5V20A1,1 0 0,1 20,21A17,17 0 0,1 3,4A1,1 0 0,1 4,3H7.5A1,1 0 0,1 8.5,4C8.5,5.25 8.7,6.45 9.07,7.57C9.18,7.92 9.1,8.31 8.82,8.59L6.62,10.79Z"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        {% if not is_paid %}
+            <!-- Payment Section -->
+            <div class="payment-notice">
+                <div class="payment-icon">💳</div>
+                <h3>Payment Required</h3>
+                <p>Please complete the payment to start your consultation</p>
+                <form method="POST" action="{{ url_for('pay', doctor_id=doctor.id, patient_id=patient_id) }}">
+                    <button type="submit" class="pay-button">
+                        Pay ₹{{ doctor.fees }}
+                    </button>
+                </form>
+            </div>
+        {% else %}
+            <!-- Chat Messages Area -->
+            <main class="chat-messages" id="chatMessages">
+                <div class="messages-container" id="messagesContainer">
+                    <!-- Date Separator -->
+                    <div class="date-separator">
+                        <span>Today</span>
+                    </div>
+                </div>
+            </main>
+
+            <!-- Message Input Area -->
+            <footer class="message-input-area">
+                <form class="message-form" id="messageForm">
+                    <div class="input-container">
+                        <button type="button" class="attachment-btn" title="Attach File">
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M16.5,6V17.5A4,4 0 0,1 12.5,21.5A4,4 0 0,1 8.5,17.5V5A2.5,2.5 0 0,1 11,2.5A2.5,2.5 0 0,1 13.5,5V15.5A1,1 0 0,1 12.5,16.5A1,1 0 0,1 11.5,15.5V6H10V15.5A2.5,2.5 0 0,0 12.5,18A2.5,2.5 0 0,0 15,15.5V5A4,4 0 0,0 11,1A4,4 0 0,0 7,5V17.5A5.5,5.5 0 0,0 12.5,23A5.5,5.5 0 0,0 18,17.5V6H16.5Z"/>
+                            </svg>
+                        </button>
+                        
+                        <div class="text-input-wrapper">
+                            <textarea 
+                                id="messageInput" 
+                                placeholder="Type your message..." 
+                                rows="1"
+                                maxlength="1000"></textarea>
+                            <div class="input-actions">
+                                <button type="button" class="voice-btn" id="voiceBtn" title="Voice Input">
+                                    <svg viewBox="0 0 24 24" fill="currentColor" id="micIcon">
+                                        <path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button type="submit" class="send-btn" id="sendBtn" disabled>
+                            <svg viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <div class="character-count">
+                        <span id="charCount">0</span>/1000
+                    </div>
+                </form>
+            </footer>
+
+            <!-- Feedback Section -->
+            <div class="feedback-modal" id="feedbackModal" style="display: none;">
+                <div class="feedback-content">
+                    <h3>Rate Your Consultation</h3>
+                    <div class="rating-stars" id="ratingStars">
+                        <span class="star" data-rating="1">⭐</span>
+                        <span class="star" data-rating="2">⭐</span>
+                        <span class="star" data-rating="3">⭐</span>
+                        <span class="star" data-rating="4">⭐</span>
+                        <span class="star" data-rating="5">⭐</span>
+                    </div>
+                    <textarea id="feedbackText" placeholder="Share your experience..."></textarea>
+                    <button class="submit-feedback" id="submitFeedback">Submit Feedback</button>
+                    <button class="close-feedback" id="closeFeedback">Skip</button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+
+    {% if is_paid %}
+    <script>
+        const doctorId = parseInt('{{ doctor.id }}');
+        const patientId = parseInt('{{ patient_id }}');
+        let lastMessageCount = 0;
+
+        // DOM Elements
+        const messageInput = document.getElementById('messageInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const messageForm = document.getElementById('messageForm');
+        const chatMessages = document.getElementById('chatMessages');
+        const messagesContainer = document.getElementById('messagesContainer');
+        const charCount = document.getElementById('charCount');
+        const voiceBtn = document.getElementById('voiceBtn');
+        const micIcon = document.getElementById('micIcon');
+
+        // Speech Recognition Setup
+        let recognition;
+        let isRecording = false;
+
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognition = new SpeechRecognition();
+            recognition.continuous = false;
+            recognition.interimResults = true;
+            recognition.lang = 'en-US';
+
+            recognition.onstart = function() {
+                isRecording = true;
+                voiceBtn.classList.add('recording');
+                micIcon.innerHTML = '<path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z" fill="#ef4444"/>';
+            };
+
+            recognition.onresult = function(event) {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                if (finalTranscript) {
+                    messageInput.value += finalTranscript;
+                    updateCharCount();
+                    autoResizeTextarea();
+                }
+            };
+
+            recognition.onerror = function(event) {
+                console.error('Speech recognition error:', event.error);
+                stopRecording();
+            };
+
+            recognition.onend = function() {
+                stopRecording();
+            };
+        }
+
+        // Voice button click handler
+        voiceBtn.addEventListener('click', function() {
+            if (!recognition) {
+                alert('Speech recognition is not supported in your browser');
+                return;
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+
+        function stopRecording() {
+            isRecording = false;
+            voiceBtn.classList.remove('recording');
+            micIcon.innerHTML = '<path d="M12,2A3,3 0 0,1 15,5V11A3,3 0 0,1 12,14A3,3 0 0,1 9,11V5A3,3 0 0,1 12,2M19,11C19,14.53 16.39,17.44 13,17.93V21H11V17.93C7.61,17.44 5,14.53 5,11H7A5,5 0 0,0 12,16A5,5 0 0,0 17,11H19Z"/>';
+        }
+
+        // Auto-resize textarea
+        function autoResizeTextarea() {
+            messageInput.style.height = 'auto';
+            messageInput.style.height = (messageInput.scrollHeight) + 'px';
+        }
+
+        function updateCharCount() {
+            const count = messageInput.value.length;
+            charCount.textContent = count;
+            sendBtn.disabled = messageInput.value.trim().length === 0;
+        }
+
+        messageInput.addEventListener('input', function() {
+            autoResizeTextarea();
+            updateCharCount();
+        });
+
+        // Handle form submission
+        messageForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const message = messageInput.value.trim();
+            
+            if (message && !sendBtn.disabled) {
+                sendMessage(message);
+                messageInput.value = '';
+                messageInput.style.height = 'auto';
+                charCount.textContent = '0';
+                sendBtn.disabled = true;
+            }
+        });
+
+        // Handle Enter key
+        messageInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                messageForm.dispatchEvent(new Event('submit'));
+            }
+        });
+
+        // Send message function
+        async function sendMessage(content) {
+            sendBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/send_message', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        patient_id: patientId,
+                        doctor_id: doctorId,
+                        sender: 'patient',
+                        message: content
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.status === 'success') {
+                    addMessageToUI(content, 'patient', result.timestamp);
+                    scrollToBottom();
+                } else {
+                    alert('Failed to send message. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error sending message:', error);
+                alert('Error sending message. Please check your connection.');
+            } finally {
+                setTimeout(() => {
+                    sendBtn.disabled = messageInput.value.trim().length === 0;
+                }, 500);
+            }
+        }
+
+        // Add message to UI
+        function addMessageToUI(content, sender, timestamp) {
+            const messageWrapper = document.createElement('div');
+            messageWrapper.className = `message-wrapper ${sender === 'patient' ? 'sent' : 'received'}`;
+            messageWrapper.innerHTML = `
+                <div class="message-bubble">
+                    <div class="message-content">${escapeHtml(content)}</div>
+                    <div class="message-time">${timestamp || getCurrentTime()}</div>
+                </div>
+            `;
+            messagesContainer.appendChild(messageWrapper);
+        }
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Get current time
+        function getCurrentTime() {
+            const now = new Date();
+            return now.toLocaleTimeString('en-US', { 
+                hour: '2-digit', 
+                minute: '2-digit',
+                hour12: false 
+            });
+        }
+
+        // Scroll to bottom
+        function scrollToBottom() {
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        // Load messages
+        async function loadMessages() {
+            try {
+                const response = await fetch(`/get_messages/${doctorId}/${patientId}`);
+                const messages = await response.json();
+                
+                if (Array.isArray(messages) && messages.length !== lastMessageCount) {
+                    const dateSeparator = messagesContainer.querySelector('.date-separator');
+                    messagesContainer.innerHTML = '';
+                    if (dateSeparator) {
+                        messagesContainer.appendChild(dateSeparator);
+                    }
+                    
+                    messages.forEach(message => {
+                        addMessageToUI(message.message, message.sender, message.timestamp);
+                    });
+                    
+                    scrollToBottom();
+                    lastMessageCount = messages.length;
+                }
+            } catch (error) {
+                console.error('Error loading messages:', error);
+            }
+        }
+
+        // Poll for new messages
+        setInterval(loadMessages, 3000);
+        
+        // Initialize
+        function initializeChat() {
+            loadMessages();
+            messageInput.focus();
+            setTimeout(scrollToBottom, 100);
+        }
+
+        window.addEventListener('load', initializeChat);
+
+        // Handle page visibility
+        document.addEventListener('visibilitychange', function() {
+            if (!document.hidden) {
+                loadMessages();
+            }
+        });
+
+        // Auto-focus on chat area click
+        chatMessages.addEventListener('click', function() {
+            messageInput.focus();
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

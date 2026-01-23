@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ specialization }} - Available Doctors</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/specialist_doctors.css') }}">
+</head>
+<body>
+<header class="header">
+    <h1>{{ specialization }} - Available Doctors</h1>
+    <a href="{{ url_for('patient_dashboard') }}" class="back-btn">⬅ Back to Dashboard</a>
+</header>
+
+<section class="doctor-container">
+    {% if doctors %}
+        {% for doc in doctors %}
+        <div class="doctor-card">
+            <h2>Dr. {{ doc.name }}</h2>
+            <p><strong>Specialization:</strong> {{ doc.specialization }}</p>
+            <p><strong>Fees:</strong> ₹{{ "%.0f"|format(doc.fees) }}</p>
+            <p><strong>Available Days:</strong> {{ doc.available_days }}</p>
+            <p><strong>Timing:</strong> {{ doc.time_start }} - {{ doc.time_end }}</p>
+            
+            <a href="{{ url_for('chat', doctor_id=doc.id, patient_id=patient_id) }}">
+                <button class="chat-btn">💬 Chat</button>
+            </a>
+
+        </div>
+        {% endfor %}
+    {% else %}
+        <p class="no-doctor">No doctors available for this specialization.</p>
+    {% endif %}
+</section>
+
+</body>
+</html>

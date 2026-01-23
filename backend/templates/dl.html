@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Doctor Signup - Arogyam.ai</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dl.css') }}">
+</head>
+<body>
+    <div class="signup-container">
+        <h2>Doctor Registration</h2>
+        <form action="/doctor_signup" method="POST">
+
+            <!-- Doctor Name -->
+            <div class="form-group">
+                <label for="doctor_name">Doctor Name (with Initial)</label>
+                <input type="text" id="doctor_name" name="doctor_name" placeholder="Dr. J. Smith" required>
+            </div>
+
+            <!-- Specialist Type -->
+            <div class="form-group">
+                <label for="specialist_type">Specialist Type</label>
+                <select id="specialist_type" name="specialist_type" required>
+                    <option value="">-- Select Specialization --</option>
+                    <option value="Neurologist">Neurologist</option>
+                    <option value="Cardiologist">Cardiologist</option>
+                    <option value="Orthopedist">Orthopedist</option>
+                    <option value="General Physician">General Physician</option>
+                    <option value="Pulmonologist">Pulmonologist</option>
+                    <option value="Dentist">Dentist</option>
+                    <option value="Dermatologist">Dermatologist</option>
+                </select>
+            </div>
+
+            <!-- License -->
+            <div class="form-group">
+                <label for="license">Doctor License Number</label>
+                <input type="text" id="license" name="license" placeholder="LIC-123456" required>
+            </div>
+
+            <!-- Consultation Fees -->
+            <div class="form-group">
+                <label for="fees">Consultation Fees (₹)</label>
+                <input type="number" id="fees" name="fees" placeholder="500" required>
+            </div>
+
+            <!-- Available Days -->
+            <div class="form-group">
+                <label>Available Days</label>
+                <div class="checkbox-group">
+                    <label><input type="checkbox" name="days" value="Monday"> Monday</label>
+                    <label><input type="checkbox" name="days" value="Tuesday"> Tuesday</label>
+                    <label><input type="checkbox" name="days" value="Wednesday"> Wednesday</label>
+                    <label><input type="checkbox" name="days" value="Thursday"> Thursday</label>
+                    <label><input type="checkbox" name="days" value="Friday"> Friday</label>
+                    <label><input type="checkbox" name="days" value="Saturday"> Saturday</label>
+                    <label><input type="checkbox" name="days" value="Sunday"> Sunday</label>
+                </div>
+            </div>
+
+            <!-- Time Start & End -->
+            <div class="form-group">
+                <label for="time_start">Available From</label>
+                <input type="time" id="time_start" name="time_start" required>
+            </div>
+
+            <div class="form-group">
+                <label for="time_end">Available Until</label>
+                <input type="time" id="time_end" name="time_end" required>
+            </div>
+
+            <!-- Password -->
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter Password" required>
+            </div>
+
+            <!-- Confirm Password -->
+            <div class="form-group">
+                <label for="confirm_password">Confirm Password</label>
+                <input type="password" id="confirm_password" name="confirm_password" placeholder="Re-enter Password" required>
+            </div>
+
+            <!-- Signup Button -->
+            <button type="submit" class="btn">Register</button>
+
+            <!-- Already Registered -->
+            <p class="login-text">Already registered? <a href="/doctor_login">Login here</a></p>
+        </form>
+    </div>
+</body>
+</html>

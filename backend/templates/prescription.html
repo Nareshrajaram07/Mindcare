@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Give Prescription - Dr. {{ doctor.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/prescription.css') }}">
+</head>
+<body>
+    <div class="prescription-container">
+        <!-- Header -->
+        <header class="prescription-header">
+            <button class="back-btn" onclick="window.history.back()">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M20,11V13H8L13.5,18.5L12.08,19.92L4.16,12L12.08,4.08L13.5,5.5L8,11H20Z"/>
+                </svg>
+            </button>
+            <div class="header-info">
+                <h1>Create Prescription</h1>
+                <p class="patient-name">For: {{ patient.patient_name }}</p>
+            </div>
+            <div class="header-actions">
+                <button class="preview-btn" id="previewBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"/>
+                    </svg>
+                    Preview
+                </button>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="prescription-main">
+            <!-- Doctor & Patient Info Card -->
+            <div class="info-card">
+                <div class="info-section">
+                    <h3>Doctor Information</h3>
+                    <div class="info-row">
+                        <span class="label">Name:</span>
+                        <span class="value">Dr. {{ doctor.name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Specialization:</span>
+                        <span class="value">{{ doctor.specialization }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">License:</span>
+                        <span class="value">{{ doctor.license_number }}</span>
+                    </div>
+                </div>
+                <div class="divider"></div>
+                <div class="info-section">
+                    <h3>Patient Information</h3>
+                    <div class="info-row">
+                        <span class="label">Name:</span>
+                        <span class="value">{{ patient.patient_name }}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Age:</span>
+                        <span class="value">{{ patient.patient_age }} years</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Date:</span>
+                        <span class="value" id="currentDate"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Diagnosis Section -->
+            <div class="form-card">
+                <h3>Diagnosis</h3>
+                <textarea 
+                    id="diagnosis" 
+                    placeholder="Enter patient's diagnosis..."
+                    rows="3"
+                    maxlength="500"></textarea>
+                <div class="char-count">
+                    <span id="diagnosisCount">0</span>/500
+                </div>
+            </div>
+
+            <!-- Add Medicine Section -->
+            <div class="form-card">
+                <h3>Add Medicines</h3>
+                <div class="medicine-input-section">
+                    <div class="input-group">
+                        <label for="medicineName">Medicine Name</label>
+                        <input 
+                            type="text" 
+                            id="medicineName" 
+                            placeholder="e.g., Paracetamol 500mg"
+                            maxlength="100">
+                    </div>
+                    <div class="input-group">
+                        <label for="dosage">Dosage</label>
+                        <input 
+                            type="text" 
+                            id="dosage" 
+                            placeholder="e.g., 1-0-1"
+                            maxlength="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="duration">Duration</label>
+                        <input 
+                            type="text" 
+                            id="duration" 
+                            placeholder="e.g., 5 days"
+                            maxlength="50">
+                    </div>
+                    <div class="input-group">
+                        <label for="instructions">Instructions</label>
+                        <input 
+                            type="text" 
+                            id="instructions" 
+                            placeholder="e.g., After meals"
+                            maxlength="100">
+                    </div>
+                    <button class="add-medicine-btn" id="addMedicineBtn">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z"/>
+                        </svg>
+                        Add Medicine
+                    </button>
+                </div>
+            </div>
+
+            <!-- Medicines List -->
+            <div class="form-card">
+                <h3>Prescribed Medicines</h3>
+                <div id="medicinesList" class="medicines-list">
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/>
+                        </svg>
+                        <p>No medicines added yet</p>
+                        <span>Add medicines using the form above</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Notes -->
+            <div class="form-card">
+                <h3>Additional Notes / Advice</h3>
+                <textarea 
+                    id="notes" 
+                    placeholder="Enter any additional advice or precautions..."
+                    rows="4"
+                    maxlength="1000"></textarea>
+                <div class="char-count">
+                    <span id="notesCount">0</span>/1000
+                </div>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn btn-secondary" onclick="window.history.back()">
+                    Cancel
+                </button>
+                <button class="btn btn-primary" id="sendPrescriptionBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                    </svg>
+                    Send Prescription
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Preview Modal -->
+    <div id="previewModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Prescription Preview</h2>
+                <button class="close-btn" id="closeModal">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19,6.41L17.59,5L12,10.59L6.41,5L5,6.41L10.59,12L5,17.59L6.41,19L12,13.41L17.59,19L19,17.59L13.41,12L19,6.41Z"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="previewContent">
+                <!-- Preview content will be inserted here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="closeModalBtn">Close</button>
+                <button class="btn btn-primary" id="confirmSendBtn">
+                    <svg viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M2,21L23,12L2,3V10L17,12L2,14V21Z"/>
+                    </svg>
+                    Confirm & Send
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Data -->
+    <div id="prescription-config" 
+         data-doctor-id="{{ doctor.id }}" 
+         data-patient-id="{{ patient.patient_id }}" 
+         style="display: none;">
+    </div>
+
+    <script>
+        // Get configuration
+        const config = document.getElementById('prescription-config');
+        const DOCTOR_ID = parseInt(config.dataset.doctorId);
+        const PATIENT_ID = parseInt(config.dataset.patientId);
+
+        // Store medicines array
+        let medicines = [];
+
+        // DOM Elements
+        const diagnosisInput = document.getElementById('diagnosis');
+        const diagnosisCount = document.getElementById('diagnosisCount');
+        const notesInput = document.getElementById('notes');
+        const notesCount = document.getElementById('notesCount');
+        const medicineNameInput = document.getElementById('medicineName');
+        const dosageInput = document.getElementById('dosage');
+        const durationInput = document.getElementById('duration');
+        const instructionsInput = document.getElementById('instructions');
+        const addMedicineBtn = document.getElementById('addMedicineBtn');
+        const medicinesList = document.getElementById('medicinesList');
+        const sendPrescriptionBtn = document.getElementById('sendPrescriptionBtn');
+        const previewBtn = document.getElementById('previewBtn');
+        const previewModal = document.getElementById('previewModal');
+        const closeModal = document.getElementById('closeModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const confirmSendBtn = document.getElementById('confirmSendBtn');
+        const currentDateSpan = document.getElementById('currentDate');
+
+        // Set current date
+        const today = new Date();
+        currentDateSpan.textContent = today.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric' 
+        });
+
+        // Character count for diagnosis
+        diagnosisInput.addEventListener('input', function() {
+            diagnosisCount.textContent = this.value.length;
+        });
+
+        // Character count for notes
+        notesInput.addEventListener('input', function() {
+            notesCount.textContent = this.value.length;
+        });
+
+        // Add medicine
+        addMedicineBtn.addEventListener('click', function() {
+            const name = medicineNameInput.value.trim();
+            const dosage = dosageInput.value.trim();
+            const duration = durationInput.value.trim();
+            const instructions = instructionsInput.value.trim();
+
+            if (!name || !dosage || !duration) {
+                alert('Please fill in Medicine Name, Dosage, and Duration');
+                return;
+            }
+
+            const medicine = {
+                id: Date.now(),
+                name: name,
+                dosage: dosage,
+                duration: duration,
+                instructions: instructions
+            };
+
+            medicines.push(medicine);
+            renderMedicines();
+            clearMedicineInputs();
+        });
+
+        // Clear medicine inputs
+        function clearMedicineInputs() {
+            medicineNameInput.value = '';
+            dosageInput.value = '';
+            durationInput.value = '';
+            instructionsInput.value = '';
+            medicineNameInput.focus();
+        }
+
+        // Render medicines list
+        function renderMedicines() {
+            if (medicines.length === 0) {
+                medicinesList.innerHTML = `
+                    <div class="empty-state">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21,16H3V4H21M21,2H3C1.89,2 1,2.89 1,4V16A2,2 0 0,0 3,18H10V20H8V22H16V20H14V18H21A2,2 0 0,0 23,16V4C23,2.89 22.1,2 21,2Z"/>
+                        </svg>
+                        <p>No medicines added yet</p>
+                        <span>Add medicines using the form above</span>
+                    </div>
+                `;
+                return;
+            }
+
+            medicinesList.innerHTML = medicines.map((med, index) => `
+                <div class="medicine-item" data-id="${med.id}">
+                    <div class="medicine-number">${index + 1}</div>
+                    <div class="medicine-details">
+                        <div class="medicine-name">${escapeHtml(med.name)}</div>
+                        <div class="medicine-info">
+                            <span><strong>Dosage:</strong> ${escapeHtml(med.dosage)}</span>
+                            <span><strong>Duration:</strong> ${escapeHtml(med.duration)}</span>
+                            ${med.instructions ? `<span><strong>Instructions:</strong> ${escapeHtml(med.instructions)}</span>` : ''}
+                        </div>
+                    </div>
+                    <button class="delete-btn" onclick="deleteMedicine(${med.id})">
+                        <svg viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/>
+                        </svg>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        // Delete medicine
+        window.deleteMedicine = function(id) {
+            if (confirm('Are you sure you want to remove this medicine?')) {
+                medicines = medicines.filter(med => med.id !== id);
+                renderMedicines();
+            }
+        };
+
+        // Escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Preview prescription
+        previewBtn.addEventListener('click', function() {
+            const diagnosis = diagnosisInput.value.trim();
+            const notes = notesInput.value.trim();
+
+            if (!diagnosis) {
+                alert('Please enter a diagnosis');
+                return;
+            }
+
+            if (medicines.length === 0) {
+                alert('Please add at least one medicine');
+                return;
+            }
+
+            generatePreview(diagnosis, notes);
+            previewModal.style.display = 'flex';
+        });
+
+        // Generate preview
+        function generatePreview(diagnosis, notes) {
+            const previewContent = document.getElementById('previewContent');
+            
+            previewContent.innerHTML = `
+                <div class="preview-prescription">
+                    <div class="preview-header">
+                        <h2>PRESCRIPTION</h2>
+                        <p class="preview-date">${currentDateSpan.textContent}</p>
+                    </div>
+                    
+                    <div class="preview-section">
+                        <h3>Doctor Details</h3>
+                        <p><strong>Dr. {{ doctor.name }}</strong></p>
+                        <p>{{ doctor.specialization }}</p>
+                        <p>License: {{ doctor.license_number }}</p>
+                    </div>
+
+                    <div class="preview-section">
+                        <h3>Patient Details</h3>
+                        <p><strong>{{ patient.patient_name }}</strong></p>
+                        <p>Age: {{ patient.patient_age }} years</p>
+                    </div>
+
+                    <div class="preview-section">
+                        <h3>Diagnosis</h3>
+                        <p>${escapeHtml(diagnosis)}</p>
+                    </div>
+
+                    <div class="preview-section">
+                        <h3>Prescribed Medicines</h3>
+                        <table class="preview-medicines-table">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Medicine</th>
+                                    <th>Dosage</th>
+                                    <th>Duration</th>
+                                    <th>Instructions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${medicines.map((med, index) => `
+                                    <tr>
+                                        <td>${index + 1}</td>
+                                        <td>${escapeHtml(med.name)}</td>
+                                        <td>${escapeHtml(med.dosage)}</td>
+                                        <td>${escapeHtml(med.duration)}</td>
+                                        <td>${med.instructions ? escapeHtml(med.instructions) : '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    ${notes ? `
+                        <div class="preview-section">
+                            <h3>Additional Notes</h3>
+                            <p>${escapeHtml(notes)}</p>
+                        </div>
+                    ` : ''}
+
+                    <div class="preview-footer">
+                        <p><strong>Dr. {{ doctor.name }}</strong></p>
+                        <p class="signature">Digital Signature</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // Close modal
+        closeModal.addEventListener('click', () => previewModal.style.display = 'none');
+        closeModalBtn.addEventListener('click', () => previewModal.style.display = 'none');
+
+        // Send prescription
+        async function sendPrescription() {
+            const diagnosis = diagnosisInput.value.trim();
+            const notes = notesInput.value.trim();
+
+            if (!diagnosis) {
+                alert('Please enter a diagnosis');
+                return;
+            }
+
+            if (medicines.length === 0) {
+                alert('Please add at least one medicine');
+                return;
+            }
+
+            const prescriptionData = {
+                doctor_id: DOCTOR_ID,
+                patient_id: PATIENT_ID,
+                diagnosis: diagnosis,
+                medicines: medicines,
+                notes: notes,
+                date: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch('/save_prescription', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(prescriptionData)
+                });
+
+                const result = await response.json();
+
+                if (result.status === 'success') {
+                    alert('Prescription sent successfully!');
+                    window.location.href = `/chat_with_patient/${DOCTOR_ID}/${PATIENT_ID}`;
+                } else {
+                    alert('Failed to send prescription: ' + result.message);
+                }
+            } catch (error) {
+                alert('Error sending prescription: ' + error.message);
+            }
+        }
+
+        // Send button click
+        sendPrescriptionBtn.addEventListener('click', sendPrescription);
+        confirmSendBtn.addEventListener('click', function() {
+            previewModal.style.display = 'none';
+            sendPrescription();
+        });
+
+        // Close modal on outside click
+        window.addEventListener('click', function(event) {
+            if (event.target === previewModal) {
+                previewModal.style.display = 'none';
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+Flask==3.0.3
+requests
+mysql-connector-python
+Werkzeug
+flask-socketio
+eventlet
