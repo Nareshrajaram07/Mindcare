@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arogyam.ai - Your AI Healthcare Assistant</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/index.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-icon">🏥</span>
+                <span class="logo-text">Arogyam.ai</span>
+            </div>
+            <div class="nav-links">
+                <a href="#home">Home</a>
+                <a href="#about">About</a>
+                <a href="#features">Features</a>
+                <a href="#how-it-works">How It Works</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero" id="home">
+        <div class="hero-content">
+            <h1 class="hero-title">Welcome to <span class="highlight">Arogyam.ai</span></h1>
+            <p class="hero-subtitle">Your Intelligent Healthcare Companion</p>
+            <p class="hero-description">
+                Get instant medical insights powered by AI. Upload your reports, scans, and chat with specialized AI doctors available 24/7.
+            </p>
+            <a href="{{ url_for('specialists') }}" class="cta-button">Consult a Specialist</a>
+        </div>
+        <div class="hero-image">
+            <div class="image-placeholder">
+                <span class="placeholder-icon">🤖</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section class="about" id="about">
+        <div class="about-container">
+            <h2 class="section-title">About Arogyam.ai</h2>
+            <p class="about-text">
+                Arogyam.ai is an advanced AI-powered healthcare platform that brings medical expertise to your fingertips. 
+                Our intelligent system analyzes medical reports, X-rays, CT scans, and MRI images to provide preliminary 
+                insights and guidance. We connect you with specialized AI consultants trained in various medical fields.
+            </p>
+            <div class="stats">
+                <div class="stat-item">
+                    <h3>10+</h3>
+                    <p>Medical Specialties</p>
+                </div>
+                <div class="stat-item">
+                    <h3>24/7</h3>
+                    <p>Availability</p>
+                </div>
+                <div class="stat-item">
+                    <h3>AI</h3>
+                    <p>Powered Analysis</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features" id="features">
+        <h2 class="section-title">Key Features</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">💬</div>
+                <h3>AI Chat Consultation</h3>
+                <p>Chat with AI specialists trained in various medical fields for instant guidance and support.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">📄</div>
+                <h3>Report Analysis</h3>
+                <p>Upload PDF medical reports for comprehensive AI-powered analysis and interpretation.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔬</div>
+                <h3>Image Diagnostics</h3>
+                <p>Submit X-rays, CT scans, and MRI images for detailed AI examination and insights.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🎯</div>
+                <h3>Specialized Care</h3>
+                <p>Choose from multiple specialists including Neurology, Cardiology, Orthopedics, and more.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">🔒</div>
+                <h3>Secure & Private</h3>
+                <p>Your medical data is encrypted and handled with the highest security standards.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">⚡</div>
+                <h3>Instant Results</h3>
+                <p>Receive preliminary insights and recommendations within minutes, not days.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section class="how-it-works" id="how-it-works">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <h3>Select Specialist</h3>
+                <p>Choose the medical specialty that matches your needs from our comprehensive list.</p>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <h3>Upload Documents</h3>
+                <p>Share your medical reports, X-rays, CT scans, or MRI images securely.</p>
+            </div>
+            <div class="step-arrow">→</div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <h3>Chat & Get Insights</h3>
+                <p>Discuss your concerns with AI and receive detailed analysis and recommendations.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="cta-content">
+            <h2>Ready to Get Started?</h2>
+            <p>Begin your journey to better health insights today</p>
+            <a href="{{ url_for('specialists') }}" class="cta-button-secondary">Choose Your Specialist</a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <div class="logo">
+                    <span class="logo-icon">🏥</span>
+                    <span class="logo-text">Arogyam.ai</span>
+                </div>
+                <p class="footer-description">
+                    AI-powered healthcare insights at your fingertips.
+                </p>
+            </div>
+            <div class="footer-section">
+                <h4>Important Note</h4>
+                <p class="disclaimer">
+                    Arogyam.ai provides AI-assisted preliminary insights only. 
+                    This is not a substitute for professional medical advice, diagnosis, or treatment. 
+                    Always consult with qualified healthcare professionals for medical decisions.
+                </p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Arogyam.ai. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

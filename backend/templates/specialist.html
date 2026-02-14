@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Choose Your Specialist - Arogyam.ai</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/specialist.css') }}">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="logo">
+                <span class="logo-icon">🏥</span>
+                <span class="logo-text">Arogyam.ai</span>
+            </a>
+            <div class="nav-links">
+                <a href="/">Home</a>
+                <a href="/specialists" class="active">Specialists</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header Section -->
+    <section class="page-header">
+        <div class="header-content">
+            <h1>Choose Your Specialist</h1>
+            <p>Select the medical specialty that best matches your health concern</p>
+        </div>
+    </section>
+
+    <!-- Specialists Grid -->
+    <section class="specialists-section">
+        <div class="specialists-container">
+            
+            <!-- Cardiologist -->
+            <div class="specialist-card">
+                <div class="card-icon">❤️</div>
+                <h3>Cardiologist</h3>
+                <p>Heart health, blood pressure, chest pain, cardiovascular diseases and cardiac conditions</p>
+                <a href="/chat/cardiologist" class="consult-btn">Consult Now</a>
+            </div>
+
+            <!-- Dermatologist -->
+            <div class="specialist-card">
+                <div class="card-icon">🔬</div>
+                <h3>Dermatologist</h3>
+                <p>Skin conditions, acne, rashes, allergies, hair loss and cosmetic skin concerns</p>
+                <a href="/chat/dermatologist" class="consult-btn">Consult Now</a>
+            </div>
+
+            <!-- General Physician -->
+            <div class="specialist-card">
+                <div class="card-icon">🩺</div>
+                <h3>General Physician</h3>
+                <p>Common illnesses, fever, infections, general health consultation and preventive care</p>
+                <a href="/chat/general_practitioner" class="consult-btn">Consult Now</a>
+            </div>
+
+            <!-- Neurologist -->
+            <div class="specialist-card">
+                <div class="card-icon">🧠</div>
+                <h3>Neurologist</h3>
+                <p>Brain, spine, nervous system disorders, headaches, seizures, and neurological conditions</p>
+                <a href="/chat/neurologist" class="consult-btn">Consult Now</a>
+            </div>
+
+            <!-- Orthopedist -->
+            <div class="specialist-card">
+                <div class="card-icon">🦴</div>
+                <h3>Orthopedist</h3>
+                <p>Bones, joints, muscles, ligaments, fractures, arthritis and musculoskeletal problems</p>
+                <a href="/chat/orthopedic" class="consult-btn">Consult Now</a>
+            </div>
+
+            <!-- Pulmonologist -->
+            <div class="specialist-card">
+                <div class="card-icon">🫁</div>
+                <h3>Pulmonologist</h3>
+                <p>Lungs, breathing problems, asthma, respiratory infections and chest conditions</p>
+                <a href="/chat/pulmonology" class="consult-btn">Consult Now</a>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- Info Section -->
+    <section class="info-section">
+        <div class="info-content">
+            <h2>What to Expect</h2>
+            <div class="info-grid">
+                <div class="info-item">
+                    <div class="info-icon">💬</div>
+                    <h4>AI-Powered Chat</h4>
+                    <p>Discuss your symptoms and concerns with our specialized AI</p>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">📤</div>
+                    <h4>Upload Reports</h4>
+                    <p>Share medical reports, X-rays, CT scans, and MRI images</p>
+                </div>
+                <div class="info-item">
+                    <div class="info-icon">🔍</div>
+                    <h4>Get Insights</h4>
+                    <p>Receive preliminary analysis and recommendations</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <div class="logo">
+                    <span class="logo-icon">🏥</span>
+                    <span class="logo-text">Arogyam.ai</span>
+                </div>
+                <p class="footer-description">
+                    AI-powered healthcare insights at your fingertips.
+                </p>
+            </div>
+            <div class="footer-section">
+                <h4>Important Note</h4>
+                <p class="disclaimer">
+                    Arogyam.ai provides AI-assisted preliminary insights only. 
+                    This is not a substitute for professional medical advice, diagnosis, or treatment. 
+                    Always consult with qualified healthcare professionals for medical decisions.
+                </p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Arogyam.ai. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>

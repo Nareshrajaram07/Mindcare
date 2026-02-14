@@ -1,13 +1,23 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
 import mysql.connector
 from datetime import datetime
-from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO, emit, join_room
+from werkzeug.utils import secure_filename
+import os
+from dotenv import load_dotenv
+from flask_session import Session
+
+# Initialize Flask app
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = "hello" 
 
+# Load environment variables
+load_dotenv()
+
+# Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
+# Database connection function
 def get_db_connection():
     return mysql.connector.connect(
         host="localhost",      # Change if not local
@@ -16,42 +26,49 @@ def get_db_connection():
         database="arogyam",
     )
 
-# Home Page
+# Import the medical AI modules
+from models import (
+    GroqChatClient,
+    VisionModelClient,
+    MedicalRAGPipeline,
+    SPECIALIST_PROMPTS
+)
+
+# Routes
 @app.route("/")
 def home():
     return render_template("1main.html")
 
-# Debug: Check if tables exist
 @app.route("/debug/check-tables")
 def debug_check_tables():
     try:
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
-        
+
         # Check prescriptions table
         cursor.execute("""
             SELECT COUNT(*) as count FROM information_schema.TABLES 
             WHERE TABLE_SCHEMA = 'arogyam' AND TABLE_NAME = 'prescriptions'
         """)
         prescriptions_exists = cursor.fetchone()['count'] > 0
-        
+
         # Check prescription_medicines table
         cursor.execute("""
             SELECT COUNT(*) as count FROM information_schema.TABLES 
             WHERE TABLE_SCHEMA = 'arogyam' AND TABLE_NAME = 'prescription_medicines'
         """)
         medicines_exists = cursor.fetchone()['count'] > 0
-        
+
         # Count prescriptions
         if prescriptions_exists:
             cursor.execute("SELECT COUNT(*) as count FROM prescriptions")
             prescription_count = cursor.fetchone()['count']
         else:
             prescription_count = "table doesn't exist"
-        
+
         cursor.close()
         conn.close()
-        
+
         return {
             "prescriptions_table_exists": prescriptions_exists,
             "prescription_medicines_table_exists": medicines_exists,
@@ -60,12 +77,10 @@ def debug_check_tables():
     except Exception as e:
         return {"error": str(e)}
 
-# Doctor Consultation Page
 @app.route("/doctor")
 def doctor_consultation():
     return render_template("2dp.html")
 
-# AI Consultation Page (optional)
 @app.route("/ai")
 def ai_consultation():
     return "<h1>AI Consultation Page Coming Soon</h1>"
@@ -732,5 +747,438 @@ def handle_connect():
 def handle_disconnect():
     print('Client disconnected')
     
-if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=8000) 
+    
+
+###ai
+
+# Configure Flask app with proper settings
+app.config['SESSION_TYPE'] = 'filesystem'  # or 'redis' if you prefer
+Session(app)
+
+# Configure upload folder
+UPLOAD_FOLDER = 'uploads'
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'dcm'}
+MAX_FILE_SIZE = 16 * 1024 * 1024  # 16MB
+
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
+
+# Initialize AI clients - Using only Groq and Mistral
+GROQ_API_KEY = os.getenv('GROQ_API_KEY')
+MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY')
+
+groq_client = GroqChatClient(GROQ_API_KEY)
+vision_client = VisionModelClient( 
+    mistral_api_key=MISTRAL_API_KEY
+)
+
+# Dictionary to store RAG pipelines per session
+rag_pipelines = {}
+
+# Specialist information dictionary
+SPECIALISTS = {
+    'general_practitioner': {
+        'name': 'General Practitioner',
+        'icon': '🩺',
+        'description': 'Provides care for common illnesses, fever, infections, and general health consultation.',
+        'type': 'general_practitioner'
+    },
+    'cardiologist': {
+        'name': 'Cardiologist',
+        'icon': '❤️',
+        'description': 'Specialized in heart health, blood pressure, chest pain, and cardiovascular diseases.',
+        'type': 'cardiologist'
+    },
+    'dermatologist': {
+        'name': 'Dermatologist',
+        'icon': '🔬',
+        'description': 'Expert in skin conditions, acne, rashes, allergies, and cosmetic skin concerns.',
+        'type': 'dermatologist'
+    },
+    'orthopedic': {
+        'name': 'Orthopedist',
+        'icon': '🦴',
+        'description': 'Expert in bones, joints, muscles, fractures, and musculoskeletal problems.',
+        'type': 'orthopedic'
+    },
+    'gynecologist': {
+        'name': 'Gynecologist',
+        'icon': '👩‍⚕️',
+        'description': 'Specialized in women\'s health, reproductive health, and gynecological issues.',
+        'type': 'gynecologist'
+    },
+    'neurologist': {
+        'name': 'Neurologist',
+        'icon': '🧠',
+        'description': 'Specialized in brain, spine, nervous system disorders, and neurological conditions.',
+        'type': 'neurologist'
+    },
+}
+
+def allowed_file(filename):
+    """Check if file extension is allowed"""
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_file_type(filename):
+    """Determine file type for processing"""
+    ext = filename.rsplit('.', 1)[1].lower()
+    if ext == 'pdf':
+        return 'pdf'
+    elif ext in ['png', 'jpg', 'jpeg']:
+        return 'image'
+    elif ext == 'dcm':
+        return 'dicom'
+    return 'unknown'
+
+def extract_patient_info_from_message(message, specialist_type):
+    """Extract patient information from conversational message"""
+    # Initialize with defaults
+    patient_data = {
+        'name': session.get('patient_name', 'Patient'),
+        'age': session.get('patient_age', 'Not specified'),
+        'gender': session.get('patient_gender', 'Not specified'),
+        'symptoms': message,
+    }
+    
+    # Add specialist-specific fields with defaults
+    if specialist_type == 'cardiologist':
+        patient_data.update({
+            'bp': 'Not measured',
+            'cholesterol': 'Not available',
+            'diabetes_status': 'Not specified',
+            'smoking_status': 'Not specified',
+            'family_history': 'Not specified',
+            'medications': 'None reported'
+        })
+    elif specialist_type == 'dermatologist':
+        patient_data.update({
+            'location': 'Not specified',
+            'duration': 'Not specified',
+            'appearance': 'See description',
+            'associated_symptoms': message,
+            'skin_type': 'Not specified',
+            'previous_treatments': 'None reported'
+        })
+    elif specialist_type == 'orthopedic':
+        patient_data.update({
+            'location': 'Not specified',
+            'onset': 'Recent',
+            'injury_mechanism': 'Not specified',
+            'pain_level': 'Not specified',
+            'swelling': 'Not specified',
+            'rom': 'Not specified',
+            'activity_level': 'Not specified'
+        })
+    elif specialist_type == 'gynecologist':
+        patient_data.update({
+            'lmp': 'Not specified',
+            'cycle_regularity': 'Not specified',
+            'flow': 'Not specified',
+            'obstetric_history': 'Not specified',
+            'contraception': 'Not specified',
+            'sexual_history': 'Not specified',
+            'medications': 'None reported'
+        })
+    elif specialist_type == 'neurologist':
+        patient_data.update({
+            'onset': 'Recent',
+            'duration': 'Not specified',
+            'frequency': 'Not specified',
+            'progression': 'Not specified',
+            'headache': 'Not specified',
+            'weakness': 'Not specified',
+            'numbness': 'Not specified',
+            'vision': 'Normal',
+            'speech': 'Normal',
+            'cognitive': 'Normal',
+            'neuro_history': 'None reported',
+            'family_history': 'Not specified',
+            'medications': 'None reported'
+        })
+
+    else:  # general_practitioner
+        patient_data.update({
+            'medical_history': 'None reported',
+            'medications': 'None reported',
+            'allergies': 'None reported'
+        })
+    
+    return patient_data
+
+@app.route('/index')
+def index():
+    """Render the index page"""
+    return render_template('index.html')
+
+@app.route('/specialists')
+def specialists():
+    """Render the specialists page"""
+    return render_template('specialist.html')
+
+@app.route('/chat/<specialist_type>')
+def chat_specialist(specialist_type):
+    """Render the chat page for selected specialist"""
+    # Check if specialist type is valid
+    if specialist_type not in SPECIALISTS:
+        return "Specialist not found", 404
+    
+    # Get specialist information
+    specialist_info = SPECIALISTS[specialist_type]
+    
+    # Store in session
+    session['specialist_type'] = specialist_type
+    
+    return render_template(
+        'chat.html',
+        specialist_type=specialist_type,
+        specialist_name=specialist_info['name'],
+        specialist_icon=specialist_info['icon'],
+        specialist_description=specialist_info['description']
+    )
+@app.route('/api/chat', methods=['POST'])
+def api_chat():
+    """Handle chat messages"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'success': False, 'error': 'No JSON data provided'}), 400
+        
+        message = data.get('message', '').strip()
+        specialist_type = data.get('specialist')
+        uploaded_files = data.get('files', [])
+        
+        print(f"DEBUG: api_chat received - message: {message}, specialist: {specialist_type}, files: {uploaded_files}")
+        
+        if not message:
+            return jsonify({'success': False, 'error': 'Message is required'}), 400
+        
+        if not specialist_type:
+            return jsonify({'success': False, 'error': 'Specialist type is required'}), 400
+        
+        if specialist_type not in SPECIALIST_PROMPTS:
+            return jsonify({'success': False, 'error': f'Invalid specialist type: {specialist_type}. Valid types are: {list(SPECIALIST_PROMPTS.keys())}'}), 400
+        
+        # Initialize session conversation history
+        if 'conversation_history' not in session:
+            session['conversation_history'] = []
+        
+        # Check if there are uploaded files to process
+        session_id = session.get('session_id', str(__import__('uuid').uuid4()))
+        session['session_id'] = session_id
+        
+        response_text = ""
+        
+        # If files are uploaded, process them
+        if uploaded_files:
+            response_text += process_uploaded_files(uploaded_files, message, specialist_type, session_id)
+        else:
+            # Regular chat without files
+            patient_data = extract_patient_info_from_message(message, specialist_type)
+            response_text = groq_client.chat(specialist_type, patient_data)
+        
+        # Store conversation
+        session['conversation_history'].append({
+            'user': message,
+            'assistant': response_text,
+            'timestamp': datetime.now().isoformat()
+        })
+        session.modified = True
+        
+        return jsonify({
+            'success': True,
+            'response': response_text
+        })
+        
+    except Exception as e:
+        print(f"Error in api_chat: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({
+            'success': False,
+            'error': f'An error occurred: {str(e)}'
+        }), 500
+
+@app.route('/api/upload', methods=['POST'])
+def upload_file():
+    """Handle file uploads"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({'success': False, 'error': 'No file provided'}), 400
+        
+        file = request.files['file']
+        
+        if file.filename == '':
+            return jsonify({'success': False, 'error': 'No file selected'}), 400
+        
+        if not allowed_file(file.filename):
+            return jsonify({'success': False, 'error': 'File type not allowed'}), 400
+        
+        # Save file
+        filename = secure_filename(file.filename)
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+        unique_filename = f"{timestamp}_{filename}"
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], unique_filename)
+        file.save(filepath)
+        
+        # Store file info in session
+        if 'uploaded_files' not in session:
+            session['uploaded_files'] = []
+        
+        session['uploaded_files'].append({
+            'original_name': filename,
+            'saved_name': unique_filename,
+            'filepath': filepath,
+            'type': get_file_type(filename),
+            'timestamp': timestamp
+        })
+        session.modified = True
+        
+        return jsonify({
+            'success': True,
+            'filename': filename,
+            'saved_name': unique_filename
+        })
+        
+    except Exception as e:
+        print(f"Error in upload_file: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+def process_uploaded_files(file_names, message, specialist_type, session_id):
+    """Process uploaded files with AI models - Using only Mistral for vision"""
+    try:
+        uploaded_files = session.get('uploaded_files', [])
+        response_parts = []
+        
+        for file_name in file_names:
+            # Find file info
+            file_info = next((f for f in uploaded_files if f['original_name'] == file_name), None)
+            if not file_info:
+                continue
+            
+            filepath = file_info['filepath']
+            file_type = file_info['type']
+            
+            if file_type == 'pdf':
+                # Process PDF with RAG using Groq
+                if session_id not in rag_pipelines:
+                    rag_pipelines[session_id] = MedicalRAGPipeline(
+                        GROQ_API_KEY,
+                        collection_name=f"medical_docs_{session_id}"
+                    )
+                
+                rag_pipeline = rag_pipelines[session_id]
+                rag_pipeline.process_pdf(filepath, document_id=file_info['saved_name'])
+                
+                patient_info = {
+                    'name': session.get('patient_name', 'Patient'),
+                    'age': session.get('patient_age', 'Not specified'),
+                    'document_type': 'Medical Document'
+                }
+                
+                rag_response = rag_pipeline.query_documents(message, patient_info)
+                response_parts.append(f"📄 **Analysis of {file_name}:**\n\n{rag_response}")
+                
+            elif file_type == 'image':
+                # Process image with vision model - Using Mistral only
+                patient_info = {
+                    'name': session.get('patient_name', 'Patient'),
+                    'age': session.get('patient_age', 'Not specified'),
+                    'gender': session.get('patient_gender', 'Not specified'),
+                }
+                
+                # Determine image type based on specialist or message
+                if specialist_type == 'dermatologist' or 'skin' in message.lower():
+                    patient_info.update({
+                        'location': 'Not specified',
+                        'duration': 'Not specified',
+                        'changes': 'See image',
+                        'symptoms': message
+                    })
+                    image_response = vision_client.analyze_skin_condition(
+                        filepath, patient_info  # Changed to mistral
+                    )
+                else:
+                    # Default to X-ray analysis
+                    patient_info.update({
+                        'body_part': 'Not specified',
+                        'indication': message
+                    })
+                    image_response = vision_client.analyze_xray(
+                        filepath, patient_info  # Changed to mistral
+                    )
+                
+                response_parts.append(f"🔬 **Analysis of {file_name}:**\n\n{image_response}")
+        
+        # Combine responses
+        if response_parts:
+            combined_response = "\n\n---\n\n".join(response_parts)
+            
+            # Add contextual advice from specialist using Groq
+            patient_data = extract_patient_info_from_message(
+                f"Based on the uploaded files, {message}", 
+                specialist_type
+            )
+            specialist_advice = groq_client.chat(specialist_type, patient_data)
+            
+            return f"{combined_response}\n\n---\n\n**Specialist Consultation:**\n\n{specialist_advice}"
+        else:
+            # No files found, regular chat
+            patient_data = extract_patient_info_from_message(message, specialist_type)
+            return groq_client.chat(specialist_type, patient_data)
+            
+    except Exception as e:
+        print(f"Error processing files: {str(e)}")
+        return f"I encountered an error processing the uploaded files. However, let me address your question: {message}"
+
+@app.route('/api/clear-session', methods=['POST'])
+def clear_session():
+    """Clear session data and uploaded files"""
+    try:
+        session_id = session.get('session_id')
+        
+        # Delete uploaded files
+        if 'uploaded_files' in session:
+            for file_info in session['uploaded_files']:
+                try:
+                    if os.path.exists(file_info['filepath']):
+                        os.remove(file_info['filepath'])
+                except:
+                    pass
+        
+        # Delete RAG pipeline
+        if session_id and session_id in rag_pipelines:
+            try:
+                rag_pipelines[session_id].delete_collection()
+                del rag_pipelines[session_id]
+            except:
+                pass
+        
+        # Clear session
+        session.clear()
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        print(f"Error clearing session: {str(e)}")
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/patient-info', methods=['POST'])
+def save_patient_info():
+    """Save patient information to session"""
+    try:
+        data = request.get_json()
+        session['patient_name'] = data.get('name', 'Patient')
+        session['patient_age'] = data.get('age', 'Not specified')
+        session['patient_gender'] = data.get('gender', 'Not specified')
+        session.modified = True
+        
+        return jsonify({'success': True})
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+if __name__ == "__main__":
+    app.run(host="127.0.0.1", port=8000, debug=True)
