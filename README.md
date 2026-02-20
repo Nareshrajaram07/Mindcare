@@ -101,13 +101,13 @@ python app.py
 
 ---
 
-## 🔮 Future Improvements
+## 🔮 Project Outcomes
 
-* Add user authentication (Login/Register)
-* Add AI-based mental health prediction
-* Connect database (MySQL / MongoDB)
-* Deploy on cloud (AWS / Azure / Render)
-* Add chatbot support
+* Added user authentication (Login/Register)
+* Added AI-based mental health prediction
+* Connected database (MySQL / MongoDB)
+* Deployed on cloud (AWS / Azure / Render)
+* Added chatbot support
 
 ---
 
