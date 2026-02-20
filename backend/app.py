@@ -13,7 +13,10 @@ app.secret_key = "hello"
 
 # Load environment variables
 load_dotenv()
+app.config['SESSION_TYPE'] = 'filesystem'
+app.config['SESSION_PERMANENT'] = False
 
+Session(app)
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
 
@@ -22,7 +25,7 @@ def get_db_connection():
     return mysql.connector.connect(
         host="localhost",      # Change if not local
         user="root",           # Your MySQL username
-        password="G1234512345",  # Your MySQL password
+        password="root@123",  # Your MySQL password
         database="arogyam",
     )
 
@@ -111,9 +114,24 @@ def get_specialists():
 # 🔹 Patient Dashboard Route
 @app.route("/patient_dashboard")
 def patient_dashboard():
-    specialists = get_specialists()
-    return render_template("mainpatientpage.html", specialists=specialists)
 
+    print("SESSION DATA:", session)
+
+    if "patient_id" not in session:
+        print("No patient_id in session")
+        return redirect(url_for("login_patient"))
+
+    specialists = get_specialists()
+
+    return render_template(
+        "mainpatientpage.html",
+        specialists=specialists
+    )
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login_patient"))
 # 🔹 Patient Signup
 @app.route("/submit", methods=["GET", "POST"])
 def submit():
@@ -126,32 +144,35 @@ def submit():
 
         try:
             conn = get_db_connection()
-            cursor = conn.cursor()
+            cursor = conn.cursor(dictionary=True)
 
-            # Check if email already exists
             cursor.execute("SELECT * FROM patients WHERE email = %s", (email,))
             if cursor.fetchone():
                 flash("You are already registered. Please log in.", "warning")
                 return redirect(url_for("login_patient"))
 
-            # Insert new patient
             cursor.execute(
                 "INSERT INTO patients (name, email, password, phone, age) VALUES (%s, %s, %s, %s, %s)",
                 (name, email, password, phone, age)
             )
+
             conn.commit()
+
+            # IMPORTANT: get inserted user id
+            patient_id = cursor.lastrowid
+
+            # SET SESSION HERE
+            session["patient_id"] = patient_id
+            session["patient_name"] = name
+
             cursor.close()
             conn.close()
 
-            flash("Registration successful! Welcome to your dashboard.", "success")
             return redirect(url_for("patient_dashboard"))
 
         except Exception as e:
             flash(f"Error: {e}", "danger")
             return redirect(url_for("login_patient"))
-
-    return render_template("mainpatientpage.html")
-
 # Login Page for registered patients
 @app.route("/login")
 def login_patient_registered():
@@ -170,7 +191,11 @@ def check_details():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        cursor.execute("SELECT * FROM patients WHERE name = %s AND password = %s", (name, password))
+        cursor.execute(
+            "SELECT * FROM patients WHERE name = %s AND password = %s",
+            (name, password)
+        )
+
         user = cursor.fetchone()
 
         cursor.close()
@@ -178,10 +203,12 @@ def check_details():
 
         if user:
             session["patient_id"] = user["id"]
-            return redirect(url_for("patient_dashboard"))
-        else:
-            return render_template("pl.html", error="Invalid name or password. Please sign up.")
+            session["patient_name"] = user["name"]
 
+            return redirect(url_for("patient_dashboard"))
+
+        else:
+            return render_template("pl.html", error="Invalid login")
 @app.route("/specialist/<specialization>")
 def show_specialist(specialization):
     conn = get_db_connection()
@@ -1181,4 +1208,4 @@ def save_patient_info():
 
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=8000, debug=True)
