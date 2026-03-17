@@ -50,17 +50,18 @@
         </header>
 
         {% if not is_paid %}
-            <!-- Payment Section -->
+            <!-- Payment Section (Razorpay simulated checkout) -->
             <div class="payment-notice">
                 <div class="payment-icon">💳</div>
                 <h3>Payment Required</h3>
                 <p>Please complete the payment to start your consultation</p>
-                <form method="POST" action="{{ url_for('pay', doctor_id=doctor.id, patient_id=patient_id) }}">
-                    <button type="submit" class="pay-button">
-                        Pay ₹{{ doctor.fees }}
-                    </button>
-                </form>
+                <div style="display:flex;gap:12px;justify-content:center;margin-top:12px;">
+                    <button id="razorpayPayBtn" class="pay-button">Pay ₹{{ doctor.fees }} with Razorpay</button>
+                </div>
             </div>
+            <input type="hidden" id="paymentAmount" value="{{ (doctor.fees * 100)|int }}">
+            <!-- NOTE: This is a client-side simulated Razorpay flow using a test/public key placeholder.
+                 Replace `RAZORPAY_KEY` with your real Razorpay key and implement server-side order creation for production. -->
         {% else %}
             <!-- Chat Messages Area -->
             <main class="chat-messages" id="chatMessages">
@@ -127,6 +128,61 @@
             </div>
         {% endif %}
     </div>
+    {% if not is_paid %}
+    <!-- Razorpay simulated checkout script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+
+<script>
+document.getElementById("razorpayPayBtn").onclick = async function () {
+
+    const amount = document.getElementById("paymentAmount").value;
+
+    const res = await fetch("/create-order", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({ amount: amount })
+    });
+
+    const order = await res.json();
+
+    const options = {
+        key: "{{ razorpay_key_id }}",
+        amount: order.amount,
+        currency: "INR",
+        order_id: order.id,
+
+        handler: async function (response) {
+
+    const verifyRes = await fetch("/verify-payment", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            order_id: response.razorpay_order_id,
+            payment_id: response.razorpay_payment_id,
+            signature: response.razorpay_signature,
+            doctor_id: "{{ doctor.id }}",
+            patient_id: "{{ patient_id }}"
+        })
+    });
+
+    const result = await verifyRes.json();
+
+    if (result.status === "success") {
+        alert("✅ Payment Successful!");
+
+        // 🔥 THIS LINE FIXES YOUR ISSUE
+        window.location.href = `/chat/{{ doctor.id }}/{{ patient_id }}`;
+    } else {
+        alert("❌ Payment Failed!");
+    }
+}
+    };
+
+    const rzp = new Razorpay(options);
+    rzp.open();
+};
+</script>
+    {% endif %}
 
     {% if is_paid %}
     <script>

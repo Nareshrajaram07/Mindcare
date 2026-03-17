@@ -5,21 +5,30 @@ from flask_socketio import SocketIO, emit, join_room
 from werkzeug.utils import secure_filename
 import os
 from dotenv import load_dotenv
+import requests
+import hmac
+import hashlib
+import uuid
 from flask_session import Session
-
+import razorpay
 # Initialize Flask app
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.secret_key = "hello" 
 
 # Load environment variables
 load_dotenv()
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+print("KEY:", RAZORPAY_KEY_ID)
+print("SECRET:", RAZORPAY_KEY_SECRET)
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET))
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['SESSION_PERMANENT'] = False
 
 Session(app)
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
-
+razorpay_enabled = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
 # Database connection function
 def get_db_connection():
     return mysql.connector.connect(
@@ -90,7 +99,8 @@ def ai_consultation():
 
 @app.route("/loginpatient", methods=["GET"])
 def login_patient():
-    return render_template("pl.html")
+    # Show the patient LOGIN page first. Signup is available from the login page.
+    return render_template("pal.html")
 
 def get_specialists():
     conn = get_db_connection()
@@ -177,6 +187,31 @@ def submit():
 @app.route("/login")
 def login_patient_registered():
     return render_template("pal.html")
+# 🔹 Patient Login (POST)
+@app.route("/pmain", methods=["POST"])
+def pmain():
+    name = request.form.get("name")
+    password = request.form.get("password")
+
+    conn = get_db_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    cursor.execute("SELECT * FROM patients WHERE name=%s", (name,))
+    patient = cursor.fetchone()
+
+    cursor.close()
+    conn.close()
+
+    if patient and patient['password'] == password:
+        session['patient_id'] = patient['id']
+        session['patient_name'] = patient['name']
+
+        flash("Login successful!", "success")
+        return redirect(url_for("patient_dashboard"))
+    else:
+        # 🔥 YOUR REQUIRED BEHAVIOR
+        flash("Incorrect credentials. Please sign up 👇", "danger")
+        return render_template("pal.html")
 
 @app.route("/pl")
 def pl():
@@ -238,7 +273,8 @@ def show_specialist(specialization):
 
 @app.route("/logindoctor")
 def dl():
-    return render_template("dl.html")
+    # Show the doctor LOGIN page first. Signup is available from the login page.
+    return render_template("dal.html")
 
 @app.route("/doctor_login")
 def dal():
@@ -356,31 +392,27 @@ def doctor_login():
         conn = get_db_connection()
         cursor = conn.cursor(dictionary=True)
 
-        # Check if the doctor exists
-        cursor.execute(
-            "SELECT * FROM doctors WHERE name = %s AND password = %s",
-            (doctor_name, password)
-        )
+        # 🔍 Check doctor by name
+        cursor.execute("SELECT * FROM doctors WHERE name = %s", (doctor_name,))
         doctor = cursor.fetchone()
 
         cursor.close()
         conn.close()
 
-        if doctor:
-            # Store doctor info in session for better management
+        # 🔥 Single condition for both cases
+        if doctor and doctor['password'] == password:
             session['doctor_id'] = doctor['id']
             session['doctor_name'] = doctor['name']
             session['doctor_license'] = doctor['license_number']
-            
+
             flash(f"Welcome Dr. {doctor['name']}!", "success")
             return redirect(url_for("doctordashboard", license=doctor['license_number']))
         else:
-            flash("Invalid username or password", "danger")
+            flash("Incorrect credentials. Please sign up 👇", "danger")
             return redirect(url_for("doctor_login"))
 
     return render_template("dal.html")
-
-# EXISTING CHAT ROUTE (for Patient to Doctor - keep as is)
+    # EXISTING CHAT ROUTE (for Patient to Doctor - keep as is)
 @app.route("/chat/<int:doctor_id>/<int:patient_id>")
 def chat(doctor_id, patient_id):
     conn = get_db_connection()
@@ -405,9 +437,75 @@ def chat(doctor_id, patient_id):
     if not doctor:
         return "Doctor not found", 404
 
-    return render_template("chat_doctor.html", doctor=doctor, is_paid=is_paid, patient_id=patient_id)
+    razorpay_enabled = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
+    return render_template(
+    "chat_doctor.html",
+    doctor=doctor,
+    patient_id=patient_id,
+    is_paid=is_paid,
+    razorpay_enabled=True,
+    razorpay_key_id=RAZORPAY_KEY_ID
+)
+@app.route('/create-order', methods=['POST'])
+def create_order():
+    data = request.json
+    amount = int(data.get("amount"))
 
+    if razorpay_enabled:
+        order = razorpay_client.order.create({
+            "amount": amount,
+            "currency": "INR",
+            "payment_capture": 1
+        })
+        return jsonify(order)
+    else:
+        # Demo fallback
+        return jsonify({
+            "id": "demo_order_" + str(uuid.uuid4()),
+            "amount": amount
+        })
+@app.route('/verify-payment', methods=['POST'])
+def verify_payment():
+    data = request.json
+
+    if razorpay_enabled:
+        params_dict = {
+            'razorpay_order_id': data['order_id'],
+            'razorpay_payment_id': data['payment_id'],
+            'razorpay_signature': data['signature']
+        }
+
+        try:
+            razorpay_client.utility.verify_payment_signature(params_dict)
+            status = "paid"
+        except:
+            return jsonify({"status": "failed"}), 400
+    else:
+        status = "paid"
+
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    cursor.execute("""
+        INSERT INTO payments (doctor_id, patient_id, status)
+        VALUES (%s, %s, %s)
+    """, (
+        data['doctor_id'],
+        data['patient_id'],
+        status
+    ))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    return jsonify({"status": "success"})
+
+
+# ✅ Separate route (outside function)
 @app.route("/pay/<int:doctor_id>/<int:patient_id>", methods=["POST"])
+def pay(doctor_id, patient_id):
+    return "Payment route working"
 def pay(doctor_id, patient_id):
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -794,6 +892,14 @@ app.config['MAX_CONTENT_LENGTH'] = MAX_FILE_SIZE
 # Initialize AI clients - Using only Groq and Mistral
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 MISTRAL_API_KEY = os.getenv('MISTRAL_API_KEY')
+RAZORPAY_KEY_ID = os.getenv('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = os.getenv('RAZORPAY_KEY_SECRET')
+
+# Log whether Razorpay is configured (helps debugging startup issues)
+if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
+    print('[startup] Razorpay configured: RAZORPAY_KEY_ID present')
+else:
+    print('[startup] Razorpay NOT configured: using simulated/demo payment flow')
 
 groq_client = GroqChatClient(GROQ_API_KEY)
 vision_client = VisionModelClient( 

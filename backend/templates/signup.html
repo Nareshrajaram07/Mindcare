@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MindCare - Patient Signup</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/signup.css') }}">
+</head>
+<body>
+    <div class="signup-container">
+        <!-- Left Section - Branding & Info -->
+        <div class="info-section">
+            <div class="branding">
+                <div class="logo">
+                    <span class="logo-icon">🏥</span>
+                    <h1>MindCare</h1>
+                </div>
+                <p class="tagline">Your Intelligent Healthcare Companion</p>
+            </div>
+
+            <div class="features-list">
+                <div class="feature">
+                    <span class="feature-icon">💬</span>
+                    <div>
+                        <h3>AI Consultation</h3>
+                        <p>Chat with specialized AI doctors 24/7</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">📄</span>
+                    <div>
+                        <h3>Report Analysis</h3>
+                        <p>Upload and analyze medical reports</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🔬</span>
+                    <div>
+                        <h3>Image Diagnostics</h3>
+                        <p>X-rays, CT scans, and MRI analysis</p>
+                    </div>
+                </div>
+                <div class="feature">
+                    <span class="feature-icon">🔒</span>
+                    <div>
+                        <h3>Secure & Private</h3>
+                        <p>Your data is fully encrypted</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Section - Signup Form -->
+        <div class="form-section">
+            <div class="form-wrapper">
+                <h2>Create Your Account</h2>
+                <p class="form-subtitle">Join thousands of patients getting better healthcare</p>
+
+                {% if error %}
+                <div class="alert alert-danger">{{ error }}</div>
+                {% endif %}
+
+                <form action="/submit" method="POST" class="signup-form" id="signupForm">
+                    
+                    <!-- Full Name -->
+                    <div class="form-group">
+                        <label for="name">Full Name <span class="required">*</span></label>
+                        <input 
+                            type="text" 
+                            id="name" 
+                            name="name" 
+                            placeholder="Enter your full name" 
+                            required
+                            minlength="2"
+                        >
+                        <span class="error-message" id="name-error"></span>
+                    </div>
+
+                    <!-- Email Address -->
+                    <div class="form-group">
+                        <label for="email">Email Address <span class="required">*</span></label>
+                        <input 
+                            type="email" 
+                            id="email" 
+                            name="email" 
+                            placeholder="Enter your email" 
+                            required
+                        >
+                        <span class="error-message" id="email-error"></span>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="form-group">
+                        <label for="phone">Phone Number <span class="required">*</span></label>
+                        <input 
+                            type="tel" 
+                            id="phone" 
+                            name="phone" 
+                            placeholder="10-digit mobile number" 
+                            pattern="[0-9]{10}" 
+                            required
+                        >
+                        <span class="help-text">Format: 10 digits (e.g., 9876543210)</span>
+                        <span class="error-message" id="phone-error"></span>
+                    </div>
+
+                    <!-- Age -->
+                    <div class="form-group">
+                        <label for="age">Age <span class="required">*</span></label>
+                        <input 
+                            type="number" 
+                            id="age" 
+                            name="age" 
+                            placeholder="Enter your age" 
+                            min="1" 
+                            max="120"
+                            required
+                        >
+                        <span class="error-message" id="age-error"></span>
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label for="password">Password <span class="required">*</span></label>
+                        <div class="password-field">
+                            <input 
+                                type="password" 
+                                id="password" 
+                                name="password" 
+                                placeholder="Create a strong password" 
+                                required
+                                minlength="6"
+                            >
+                            <button type="button" class="toggle-password" id="togglePassword">
+                                <span class="eye-icon">👁️</span>
+                            </button>
+                        </div>
+                        <span class="help-text">At least 6 characters</span>
+                        <span class="error-message" id="password-error"></span>
+                    </div>
+
+                    <!-- Confirm Password -->
+                    <div class="form-group">
+                        <label for="confirm_password">Confirm Password <span class="required">*</span></label>
+                        <div class="password-field">
+                            <input 
+                                type="password" 
+                                id="confirm_password" 
+                                name="confirm_password" 
+                                placeholder="Re-enter your password" 
+                                required
+                            >
+                            <button type="button" class="toggle-password" id="toggleConfirmPassword">
+                                <span class="eye-icon">👁️</span>
+                            </button>
+                        </div>
+                        <span class="error-message" id="confirm-error"></span>
+                    </div>
+
+                    <!-- Terms & Conditions -->
+                    <div class="form-group checkbox-group">
+                        <input 
+                            type="checkbox" 
+                            id="terms" 
+                            name="terms" 
+                            required
+                        >
+                        <label for="terms" class="checkbox-label">
+                            I agree to the <a href="#terms" class="link">Terms & Conditions</a> and <a href="#privacy" class="link">Privacy Policy</a>
+                        </label>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit" class="btn-signup">Create Account</button>
+
+                    <!-- Login Link -->
+                    <p class="login-link">
+                        Already have an account? <a href="{{ url_for('login_patient') }}">Sign In</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Toggle Password Visibility
+        document.getElementById('togglePassword').addEventListener('click', function(e) {
+            e.preventDefault();
+            const passwordInput = document.getElementById('password');
+            const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            passwordInput.setAttribute('type', type);
+            this.classList.toggle('active');
+        });
+
+        document.getElementById('toggleConfirmPassword').addEventListener('click', function(e) {
+            e.preventDefault();
+            const confirmInput = document.getElementById('confirm_password');
+            const type = confirmInput.getAttribute('type') === 'password' ? 'text' : 'password';
+            confirmInput.setAttribute('type', type);
+            this.classList.toggle('active');
+        });
+
+        // Form Validation
+        document.getElementById('signupForm').addEventListener('submit', function(e) {
+            const password = document.getElementById('password').value;
+            const confirmPassword = document.getElementById('confirm_password').value;
+            const email = document.getElementById('email').value;
+            const phone = document.getElementById('phone').value;
+            const age = document.getElementById('age').value;
+
+            // Clear previous errors
+            document.querySelectorAll('.error-message').forEach(el => el.textContent = '');
+
+            let isValid = true;
+
+            // Validate password match
+            if (password !== confirmPassword) {
+                document.getElementById('confirm-error').textContent = 'Passwords do not match';
+                isValid = false;
+            }
+
+            // Validate password strength
+            if (password.length < 6) {
+                document.getElementById('password-error').textContent = 'Password must be at least 6 characters';
+                isValid = false;
+            }
+
+            // Validate email format
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                document.getElementById('email-error').textContent = 'Please enter a valid email';
+                isValid = false;
+            }
+
+            // Validate phone
+            if (!/^\d{10}$/.test(phone)) {
+                document.getElementById('phone-error').textContent = 'Phone must be 10 digits';
+                isValid = false;
+            }
+
+            // Validate age
+            if (age < 1 || age > 120) {
+                document.getElementById('age-error').textContent = 'Please enter a valid age';
+                isValid = false;
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+            }
+        });
+
+        // Real-time password match validation
+        document.getElementById('confirm_password').addEventListener('input', function() {
+            const password = document.getElementById('password').value;
+            const confirmPassword = this.value;
+            const confirmError = document.getElementById('confirm-error');
+
+            if (confirmPassword && password !== confirmPassword) {
+                confirmError.textContent = 'Passwords do not match';
+            } else {
+                confirmError.textContent = '';
+            }
+        });
+    </script>
+</body>
+</html>
