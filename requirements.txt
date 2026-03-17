@@ -4,3 +4,6 @@ mysql-connector-python
 Werkzeug
 flask-socketio
 eventlet
+flask
+python-dotenv
+gunicorn
