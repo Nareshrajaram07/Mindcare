@@ -11,8 +11,12 @@ import hashlib
 import uuid
 from flask_session import Session
 import razorpay
+from flask_cors import CORS
+
 # Initialize Flask app
 app = Flask(__name__, template_folder="templates", static_folder="static")
+CORS(app)
+
 app.secret_key = "hello" 
 
 # Load environment variables
@@ -1314,4 +1318,6 @@ def save_patient_info():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    # app.run(host="0.0.0.0", port=8000, debug=True)
+    port = int(os.environ.get("PORT", 8000))
+    socketio.run(app, host="0.0.0.0", port=port)

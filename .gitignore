@@ -47,3 +47,8 @@ instance/
 # Misc
 .env
 .env.local
+
+backend/uploads/
+.env
+__pycache__/
+*.pyc
