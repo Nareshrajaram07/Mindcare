@@ -12,9 +12,12 @@ import uuid
 from flask_session import Session
 import razorpay
 from flask_cors import CORS
+print("Starting app")
 
 # Initialize Flask app
 app = Flask(__name__, template_folder="templates", static_folder="static")
+print("Flask created")
+
 CORS(app)
 
 app.secret_key = "hello" 
@@ -32,7 +35,10 @@ app.config['SESSION_PERMANENT'] = False
 Session(app)
 # Initialize Flask-SocketIO
 socketio = SocketIO(app, cors_allowed_origins="*")
+print("SocketIO ready")
+print("before Razorpay ")
 razorpay_enabled = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
+print("Razorpay ready")
 # Database connection function
 def get_db_connection():
     try:
@@ -42,19 +48,20 @@ def get_db_connection():
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_NAME"),
             port=int(os.getenv("DB_PORT", 3306)),
-            ssl_disabled=False
+            ssl_disabled=False,
+            connection_timeout=3
         )
     except Exception as e:
         print("DB ERROR:", e)
         return None
 
 # Import the medical AI modules
-from backend.models import(
-    GroqChatClient,
-    VisionModelClient,
-    MedicalRAGPipeline,
-    SPECIALIST_PROMPTS
-)
+# from backend.models import(
+#     GroqChatClient,
+#     VisionModelClient,
+#     MedicalRAGPipeline,
+#     SPECIALIST_PROMPTS
+# )
 
 # Routes
 @app.route("/health")
@@ -1362,3 +1369,5 @@ if __name__ == "__main__":
     # app.run(host="0.0.0.0", port=8000, debug=True)
     port = int(os.environ.get("PORT", 8000))
     socketio.run(app, host="0.0.0.0", port=port)
+    
+application = app
