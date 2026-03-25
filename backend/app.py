@@ -973,6 +973,12 @@ SPECIALISTS = {
         'description': 'Specialized in brain, spine, nervous system disorders, and neurological conditions.',
         'type': 'neurologist'
     },
+    'pulmonology': {
+    'name': 'Pulmonologist',
+    'icon': '🫁',
+    'description': 'Specialized in lung diseases, breathing problems, asthma, and respiratory issues.',
+    'type': 'pulmonology'
+},
 }
 
 def allowed_file(filename):
@@ -1053,6 +1059,19 @@ def extract_patient_info_from_message(message, specialist_type):
             'cognitive': 'Normal',
             'neuro_history': 'None reported',
             'family_history': 'Not specified',
+            'medications': 'None reported'
+        })
+    elif specialist_type == 'pulmonology':
+        patient_data.update({
+            'symptom_duration': 'Not specified',
+            'cough_type': 'Not specified',  # dry / wet
+            'breathlessness': 'Not specified',
+            'chest_pain': 'Not specified',
+            'smoking_history': 'Not specified',
+            'allergies': 'Not specified',
+            'asthma_history': 'Not specified',
+            'oxygen_level': 'Not measured',
+            'fever': 'Not specified',
             'medications': 'None reported'
         })
 
