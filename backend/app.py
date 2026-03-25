@@ -43,7 +43,7 @@ def get_db_connection():
     )
 
 # Import the medical AI modules
-from .models import(
+from backend.models import(
     GroqChatClient,
     VisionModelClient,
     MedicalRAGPipeline,
