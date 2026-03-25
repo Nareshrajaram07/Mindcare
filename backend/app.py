@@ -35,12 +35,18 @@ socketio = SocketIO(app, cors_allowed_origins="*")
 razorpay_enabled = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
 # Database connection function
 def get_db_connection():
-    return mysql.connector.connect(
-        host="localhost",      # Change if not local
-        user="root",           # Your MySQL username
-        password="root@123",  # Your MySQL password
-        database="arogyam",
-    )
+    try:
+        return mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME"),
+            port=int(os.getenv("DB_PORT", 3306)),
+            ssl_disabled=False
+        )
+    except Exception as e:
+        print("DB ERROR:", e)
+        return None
 
 # Import the medical AI modules
 from backend.models import(
@@ -51,6 +57,9 @@ from backend.models import(
 )
 
 # Routes
+@app.route("/health")
+def health():
+    return "OK"
 @app.route("/")
 def home():
     return render_template("1main.html")
@@ -905,10 +914,23 @@ if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET:
 else:
     print('[startup] Razorpay NOT configured: using simulated/demo payment flow')
 
-groq_client = GroqChatClient(GROQ_API_KEY)
-vision_client = VisionModelClient( 
-    mistral_api_key=MISTRAL_API_KEY
-)
+# LAZY LOADING (IMPORTANT FIX)
+groq_client = None
+vision_client = None
+
+def get_groq_client():
+    global groq_client
+    if groq_client is None:
+        print("Initializing Groq...")
+        groq_client = GroqChatClient(GROQ_API_KEY)
+    return groq_client
+
+def get_vision_client():
+    global vision_client
+    if vision_client is None:
+        print("Initializing Vision...")
+        vision_client = VisionModelClient(mistral_api_key=MISTRAL_API_KEY)
+    return vision_client
 
 # Dictionary to store RAG pipelines per session
 rag_pipelines = {}
@@ -1113,7 +1135,7 @@ def api_chat():
         else:
             # Regular chat without files
             patient_data = extract_patient_info_from_message(message, specialist_type)
-            response_text = groq_client.chat(specialist_type, patient_data)
+            response_text = get_groq_client().chat(specialist_type, patient_data)
         
         # Store conversation
         session['conversation_history'].append({
@@ -1233,7 +1255,7 @@ def process_uploaded_files(file_names, message, specialist_type, session_id):
                         'changes': 'See image',
                         'symptoms': message
                     })
-                    image_response = vision_client.analyze_skin_condition(
+                    image_response = get_vision_client().analyze_skin_condition(
                         filepath, patient_info  # Changed to mistral
                     )
                 else:
@@ -1242,7 +1264,7 @@ def process_uploaded_files(file_names, message, specialist_type, session_id):
                         'body_part': 'Not specified',
                         'indication': message
                     })
-                    image_response = vision_client.analyze_xray(
+                    image_response =get_vision_client().analyze_xray(
                         filepath, patient_info  # Changed to mistral
                     )
                 
@@ -1257,13 +1279,13 @@ def process_uploaded_files(file_names, message, specialist_type, session_id):
                 f"Based on the uploaded files, {message}", 
                 specialist_type
             )
-            specialist_advice = groq_client.chat(specialist_type, patient_data)
+            specialist_advice = get_groq_client().chat(specialist_type, patient_data)
             
             return f"{combined_response}\n\n---\n\n**Specialist Consultation:**\n\n{specialist_advice}"
         else:
             # No files found, regular chat
             patient_data = extract_patient_info_from_message(message, specialist_type)
-            return groq_client.chat(specialist_type, patient_data)
+            return get_groq_client().chat(specialist_type, patient_data)
             
     except Exception as e:
         print(f"Error processing files: {str(e)}")
