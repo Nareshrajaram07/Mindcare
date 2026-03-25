@@ -55,13 +55,13 @@ def get_db_connection():
         print("DB ERROR:", e)
         return None
 
-# Import the medical AI modules
-# from backend.models import(
-#     GroqChatClient,
-#     VisionModelClient,
-#     MedicalRAGPipeline,
-#     SPECIALIST_PROMPTS
-# )
+Import the medical AI modules
+from backend.models import(
+    GroqChatClient,
+    VisionModelClient,
+    MedicalRAGPipeline,
+    SPECIALIST_PROMPTS
+)
 
 # Routes
 @app.route("/health")
