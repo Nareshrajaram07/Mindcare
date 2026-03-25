@@ -34,7 +34,7 @@ app.config['SESSION_PERMANENT'] = False
 
 Session(app)
 # Initialize Flask-SocketIO
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 print("SocketIO ready")
 print("before Razorpay ")
 razorpay_enabled = bool(RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET)
