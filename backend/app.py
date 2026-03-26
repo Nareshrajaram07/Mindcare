@@ -54,12 +54,12 @@ def get_db_connection():
         print("DB ERROR:", e)
         return None
 # Import the medical AI modules
-from backend.models import(
-    GroqChatClient,
-    VisionModelClient,
-    MedicalRAGPipeline,
-    SPECIALIST_PROMPTS
-)
+# from backend.models import(
+#     GroqChatClient,
+#     VisionModelClient,
+#     MedicalRAGPipeline,
+#     SPECIALIST_PROMPTS
+# )
 
 # Routes
 @app.route("/health")
@@ -919,14 +919,9 @@ groq_client = None
 vision_client = None
 def get_groq_client():
     global groq_client
-    
     if groq_client is None:
-        if not GROQ_API_KEY:
-            raise Exception("GROQ_API_KEY not set in environment")
-        
-        from backend.models import GroqChatClient
-        groq_client = GroqChatClient(GROQ_API_KEY)
-    
+        from backend.models import GroqChatClient   # ✅ moved here
+        groq_client = GroqChatClient(os.getenv("GROQ_API_KEY"))
     return groq_client
 
 def get_vision_client():
@@ -939,6 +934,16 @@ def get_vision_client():
 # Dictionary to store RAG pipelines per session
 rag_pipelines = {}
 
+def get_rag_pipeline(session_id):
+    if session_id not in rag_pipelines:
+        print("Initializing RAG pipeline...")
+        from backend.models import MedicalRAGPipeline   # ✅ lazy import
+        
+        rag_pipelines[session_id] = MedicalRAGPipeline(
+            groq_api_key=os.getenv("GROQ_API_KEY")
+        )
+    
+    return rag_pipelines[session_id]
 # Specialist information dictionary
 SPECIALISTS = {
     'general_practitioner': {
@@ -1122,6 +1127,8 @@ def chat_specialist(specialist_type):
 def api_chat():
     """Handle chat messages"""
     try:
+        from backend.models import SPECIALIST_PROMPTS   # ✅ ADD HERE
+
         data = request.get_json()
         
         if not data:
