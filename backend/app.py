@@ -1,5 +1,5 @@
 from flask import Flask, render_template, request, redirect, url_for, flash, session, jsonify
-import mysql.connector
+import pymysql
 from datetime import datetime
 from flask_socketio import SocketIO, emit, join_room
 from werkzeug.utils import secure_filename
@@ -42,20 +42,18 @@ print("Razorpay ready")
 # Database connection function
 def get_db_connection():
     try:
-        return mysql.connector.connect(
+        return pymysql.connect(
             host=os.getenv("DB_HOST"),
             user=os.getenv("DB_USER"),
             password=os.getenv("DB_PASSWORD"),
             database=os.getenv("DB_NAME"),
             port=int(os.getenv("DB_PORT", 3306)),
-            ssl_disabled=False,
-            connection_timeout=3
+            connect_timeout=5
         )
     except Exception as e:
         print("DB ERROR:", e)
         return None
-
-Import the medical AI modules
+# Import the medical AI modules
 from backend.models import(
     GroqChatClient,
     VisionModelClient,
@@ -75,8 +73,7 @@ def home():
 def debug_check_tables():
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         # Check prescriptions table
         cursor.execute("""
             SELECT COUNT(*) as count FROM information_schema.TABLES 
@@ -124,7 +121,7 @@ def login_patient():
 
 def get_specialists():
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
     cursor.execute("""
         SELECT specialization, 
                COUNT(*) AS count, 
@@ -174,8 +171,7 @@ def submit():
 
         try:
             conn = get_db_connection()
-            cursor = conn.cursor(dictionary=True)
-
+            cursor = conn.cursor(pymysql.cursors.DictCursor)
             cursor.execute("SELECT * FROM patients WHERE email = %s", (email,))
             if cursor.fetchone():
                 flash("You are already registered. Please log in.", "warning")
@@ -214,7 +210,7 @@ def pmain():
     password = request.form.get("password")
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT * FROM patients WHERE name=%s", (name,))
     patient = cursor.fetchone()
@@ -244,8 +240,7 @@ def check_details():
         password = request.form.get("password")
 
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute(
             "SELECT * FROM patients WHERE name = %s AND password = %s",
             (name, password)
@@ -267,7 +262,7 @@ def check_details():
 @app.route("/specialist/<specialization>")
 def show_specialist(specialization):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Convert back the formatted specialization
     specialization = specialization.replace("_", " ").title()
@@ -308,7 +303,7 @@ def doctordashboard():
         return redirect(url_for("dl"))
 
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     # Get doctor details using license_number
     cursor.execute("SELECT * FROM doctors WHERE license_number = %s", (license_number,))
@@ -410,8 +405,11 @@ def doctor_login():
         password = request.form.get("password")
 
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
 
+        if conn is None:
+            return "Database connection failed", 500
+
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         # 🔍 Check doctor by name
         cursor.execute("SELECT * FROM doctors WHERE name = %s", (doctor_name,))
         doctor = cursor.fetchone()
@@ -436,7 +434,7 @@ def doctor_login():
 @app.route("/chat/<int:doctor_id>/<int:patient_id>")
 def chat(doctor_id, patient_id):
     conn = get_db_connection()
-    cursor = conn.cursor(dictionary=True)
+    cursor = conn.cursor(pymysql.cursors.DictCursor)
 
     cursor.execute("SELECT * FROM doctors WHERE id = %s", (doctor_id,))
     doctor = cursor.fetchone()
@@ -579,8 +577,7 @@ def send_message():
 def get_messages(doctor_id, patient_id):
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         cursor.execute("""
             SELECT sender, message, timestamp 
             FROM chats 
@@ -611,8 +608,7 @@ def get_messages(doctor_id, patient_id):
 def chat_with_patient(doctor_id, patient_id):
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
+        cursor = conn.cursor(pymysql.cursors.DictCursor)        
         # Get doctor information
         cursor.execute("SELECT * FROM doctors WHERE id = %s", (doctor_id,))
         doctor = cursor.fetchone()
@@ -675,8 +671,7 @@ def chat_with_patient(doctor_id, patient_id):
 def give_prescription(doctor_id, patient_id):
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-        
+        cursor = conn.cursor(pymysql.cursors.DictCursor)        
         # Get doctor information
         cursor.execute("SELECT * FROM doctors WHERE id = %s", (doctor_id,))
         doctor = cursor.fetchone()
@@ -765,8 +760,7 @@ def save_prescription():
 def get_prescriptions(patient_id):
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         # Get all prescriptions for this patient
         cursor.execute("""
             SELECT p.id, p.doctor_id, p.diagnosis, p.notes, p.created_date,
@@ -807,8 +801,7 @@ def get_prescriptions(patient_id):
 def view_prescriptions(doctor_id, patient_id):
     try:
         conn = get_db_connection()
-        cursor = conn.cursor(dictionary=True)
-
+        cursor = conn.cursor(pymysql.cursors.DictCursor)
         # Get doctor info
         cursor.execute("SELECT * FROM doctors WHERE id = %s", (doctor_id,))
         doctor = cursor.fetchone()
@@ -924,12 +917,16 @@ else:
 # LAZY LOADING (IMPORTANT FIX)
 groq_client = None
 vision_client = None
-
 def get_groq_client():
     global groq_client
+    
     if groq_client is None:
-        print("Initializing Groq...")
+        if not GROQ_API_KEY:
+            raise Exception("GROQ_API_KEY not set in environment")
+        
+        from backend.models import GroqChatClient
         groq_client = GroqChatClient(GROQ_API_KEY)
+    
     return groq_client
 
 def get_vision_client():
