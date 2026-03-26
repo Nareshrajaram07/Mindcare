@@ -1181,12 +1181,13 @@ def api_chat():
         })
         
     except Exception as e:
-        print(f"Error in api_chat: {str(e)}")
+        print("CHAT ERROR:", str(e))
         import traceback
         traceback.print_exc()
+
         return jsonify({
             'success': False,
-            'error': f'An error occurred: {str(e)}'
+            'error': str(e)
         }), 500
 
 @app.route('/api/upload', methods=['POST'])
